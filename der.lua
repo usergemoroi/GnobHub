@@ -1,6 +1,6 @@
 -- ██████████████████████████████████████████████████████████████
--- GNOM HUB v3.0 - Полностью переработанная версия
--- Исправлено: все функции, NoClip, Fly, автоматизация
+-- GNOM HUB v3.1 - Полностью исправленная версия (GUI FIX)
+-- Исправлено: GUI отображение, все функции, NoClip, Fly, автоматизация
 -- ██████████████████████████████████████████████████████████████
 
 local Players = game:GetService("Players")
@@ -85,7 +85,7 @@ local GnomHub = {
     },
     Connections = {},
     ESP_Folder = nil,
-    Version = "3.0"
+    Version = "3.1"
 }
 
 -- Функция безопасного получения персонажа
@@ -102,7 +102,7 @@ local function getChar()
 end
 
 -- ██████████████████████████████████████████████████████████████
--- СОЗДАНИЕ GUI
+-- СОЗДАНИЕ GUI (ИСПРАВЛЕНО)
 -- ██████████████████████████████████████████████████████████████
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -110,9 +110,12 @@ ScreenGui.Name = "GnomHubGUI_" .. math.random(10000, 99999)
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.DisplayOrder = 999999
+ScreenGui.IgnoreGuiInset = true
 
 pcall(function()
-    syn.protect_gui(ScreenGui)
+    if syn and syn.protect_gui then
+        syn.protect_gui(ScreenGui)
+    end
 end)
 
 local success = pcall(function()
@@ -133,6 +136,7 @@ MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.ClipsDescendants = true
+MainFrame.ZIndex = 1
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
@@ -151,6 +155,7 @@ Title.Size = UDim2.new(1, 0, 0, 60)
 Title.Position = UDim2.new(0, 0, 0, 0)
 Title.BackgroundColor3 = Color3.fromRGB(50, 90, 160)
 Title.BorderSizePixel = 0
+Title.ZIndex = 2
 Title.Parent = MainFrame
 
 local TitleCorner = Instance.new("UICorner")
@@ -166,18 +171,24 @@ TitleGradient.Rotation = 90
 TitleGradient.Parent = Title
 
 local TitleText = Instance.new("TextLabel")
-TitleText.Size = UDim2.new(1, -60, 1, 0)
-TitleText.Position = UDim2.new(0, 10, 0, 0)
+TitleText.Name = "TitleText"
+TitleText.Size = UDim2.new(1, -60, 0, 30)
+TitleText.Position = UDim2.new(0, 10, 0, 5)
 TitleText.BackgroundTransparency = 1
-TitleText.Text = "🧠 GNOM HUB v3.0"
-TitleText.TextColor3 = Color3.white
+TitleText.Text = "GNOM HUB v3.1"
+TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleText.Font = Enum.Font.GothamBold
 TitleText.TextSize = 20
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
+TitleText.TextYAlignment = Enum.TextYAlignment.Center
+TitleText.TextWrapped = false
+TitleText.TextScaled = false
+TitleText.ZIndex = 3
 TitleText.Parent = Title
 
 local SubTitle = Instance.new("TextLabel")
-SubTitle.Size = UDim2.new(1, -60, 0, 15)
+SubTitle.Name = "SubTitle"
+SubTitle.Size = UDim2.new(1, -60, 0, 20)
 SubTitle.Position = UDim2.new(0, 10, 0, 35)
 SubTitle.BackgroundTransparency = 1
 SubTitle.Text = "Steal a Brainrot | Right Ctrl - Toggle"
@@ -185,18 +196,26 @@ SubTitle.TextColor3 = Color3.fromRGB(200, 220, 255)
 SubTitle.Font = Enum.Font.Gotham
 SubTitle.TextSize = 11
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
+SubTitle.TextYAlignment = Enum.TextYAlignment.Center
+SubTitle.TextWrapped = false
+SubTitle.TextScaled = false
+SubTitle.ZIndex = 3
 SubTitle.Parent = Title
 
 -- Кнопка закрытия
 local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
 CloseButton.Size = UDim2.new(0, 40, 0, 40)
 CloseButton.Position = UDim2.new(1, -50, 0, 10)
 CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 CloseButton.BorderSizePixel = 0
-CloseButton.Text = "✕"
-CloseButton.TextColor3 = Color3.white
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseButton.Font = Enum.Font.GothamBold
 CloseButton.TextSize = 22
+CloseButton.TextScaled = false
+CloseButton.AutoButtonColor = true
+CloseButton.ZIndex = 3
 CloseButton.Parent = Title
 
 local CloseCorner = Instance.new("UICorner")
@@ -217,6 +236,8 @@ ScrollFrame.BorderSizePixel = 0
 ScrollFrame.ScrollBarThickness = 6
 ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(70, 130, 220)
 ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ScrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+ScrollFrame.ZIndex = 2
 ScrollFrame.Parent = MainFrame
 
 local ScrollCorner = Instance.new("UICorner")
@@ -227,6 +248,7 @@ local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Padding = UDim.new(0, 8)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+UIListLayout.FillDirection = Enum.FillDirection.Vertical
 UIListLayout.Parent = ScrollFrame
 
 local UIPadding = Instance.new("UIPadding")
@@ -242,10 +264,12 @@ end)
 
 -- Статус бар
 local StatusBar = Instance.new("Frame")
+StatusBar.Name = "StatusBar"
 StatusBar.Size = UDim2.new(1, -20, 0, 70)
 StatusBar.Position = UDim2.new(0, 10, 1, -80)
 StatusBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 StatusBar.BorderSizePixel = 0
+StatusBar.ZIndex = 2
 StatusBar.Parent = MainFrame
 
 local StatusCorner = Instance.new("UICorner")
@@ -258,19 +282,23 @@ StatusStroke.Thickness = 1
 StatusStroke.Parent = StatusBar
 
 local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Name = "StatusLabel"
 StatusLabel.Size = UDim2.new(1, -16, 1, -16)
 StatusLabel.Position = UDim2.new(0, 8, 0, 8)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "✅ GNOM HUB готов\n🛡️ Защита активна"
+StatusLabel.Text = "GNOM HUB Ready\nProtection Active"
 StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 150)
 StatusLabel.Font = Enum.Font.GothamSemibold
 StatusLabel.TextSize = 13
 StatusLabel.TextWrapped = true
+StatusLabel.TextScaled = false
 StatusLabel.TextYAlignment = Enum.TextYAlignment.Top
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.ZIndex = 3
 StatusLabel.Parent = StatusBar
 
 -- ██████████████████████████████████████████████████████████████
--- ФУНКЦИИ UI
+-- ФУНКЦИИ UI (ИСПРАВЛЕНО)
 -- ██████████████████████████████████████████████████████████████
 
 local function UpdateStatus(text, color)
@@ -278,12 +306,18 @@ local function UpdateStatus(text, color)
     StatusLabel.TextColor3 = color or Color3.fromRGB(100, 255, 150)
 end
 
+local layoutOrder = 0
+
 local function CreateSection(name)
+    layoutOrder = layoutOrder + 1
+    
     local Section = Instance.new("Frame")
     Section.Name = "Section_" .. name
     Section.Size = UDim2.new(1, -10, 0, 32)
     Section.BackgroundColor3 = Color3.fromRGB(40, 70, 130)
     Section.BorderSizePixel = 0
+    Section.LayoutOrder = layoutOrder
+    Section.ZIndex = 3
     Section.Parent = ScrollFrame
     
     local SectionCorner = Instance.new("UICorner")
@@ -291,18 +325,26 @@ local function CreateSection(name)
     SectionCorner.Parent = Section
     
     local SectionLabel = Instance.new("TextLabel")
-    SectionLabel.Size = UDim2.new(1, 0, 1, 0)
+    SectionLabel.Name = "SectionLabel"
+    SectionLabel.Size = UDim2.new(1, -10, 1, 0)
+    SectionLabel.Position = UDim2.new(0, 5, 0, 0)
     SectionLabel.BackgroundTransparency = 1
-    SectionLabel.Text = "━━━━ " .. name .. " ━━━━"
+    SectionLabel.Text = "==== " .. name .. " ===="
     SectionLabel.TextColor3 = Color3.fromRGB(220, 230, 255)
     SectionLabel.Font = Enum.Font.GothamBold
     SectionLabel.TextSize = 14
+    SectionLabel.TextWrapped = false
+    SectionLabel.TextScaled = false
+    SectionLabel.TextXAlignment = Enum.TextXAlignment.Center
+    SectionLabel.TextYAlignment = Enum.TextYAlignment.Center
+    SectionLabel.ZIndex = 4
     SectionLabel.Parent = Section
     
     return Section
 end
 
 local function CreateToggle(name, displayName, defaultState, callback)
+    layoutOrder = layoutOrder + 1
     local state = defaultState
     
     local Toggle = Instance.new("Frame")
@@ -310,6 +352,8 @@ local function CreateToggle(name, displayName, defaultState, callback)
     Toggle.Size = UDim2.new(1, -10, 0, 42)
     Toggle.BackgroundColor3 = state and Color3.fromRGB(60, 150, 80) or Color3.fromRGB(60, 60, 75)
     Toggle.BorderSizePixel = 0
+    Toggle.LayoutOrder = layoutOrder
+    Toggle.ZIndex = 3
     Toggle.Parent = ScrollFrame
     
     local ToggleCorner = Instance.new("UICorner")
@@ -322,12 +366,20 @@ local function CreateToggle(name, displayName, defaultState, callback)
     ToggleStroke.Parent = Toggle
     
     local ToggleButton = Instance.new("TextButton")
-    ToggleButton.Size = UDim2.new(1, 0, 1, 0)
+    ToggleButton.Name = "ToggleButton"
+    ToggleButton.Size = UDim2.new(1, -10, 1, -4)
+    ToggleButton.Position = UDim2.new(0, 5, 0, 2)
     ToggleButton.BackgroundTransparency = 1
-    ToggleButton.Text = (state and "✅ " or "❌ ") .. displayName
-    ToggleButton.TextColor3 = Color3.white
+    ToggleButton.Text = (state and "[ON] " or "[OFF] ") .. displayName
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     ToggleButton.Font = Enum.Font.GothamSemibold
     ToggleButton.TextSize = 14
+    ToggleButton.TextWrapped = true
+    ToggleButton.TextScaled = false
+    ToggleButton.TextXAlignment = Enum.TextXAlignment.Center
+    ToggleButton.TextYAlignment = Enum.TextYAlignment.Center
+    ToggleButton.AutoButtonColor = false
+    ToggleButton.ZIndex = 4
     ToggleButton.Parent = Toggle
     
     ToggleButton.MouseButton1Click:Connect(function()
@@ -345,12 +397,12 @@ local function CreateToggle(name, displayName, defaultState, callback)
             Color = newStrokeColor
         }):Play()
         
-        ToggleButton.Text = (state and "✅ " or "❌ ") .. displayName
+        ToggleButton.Text = (state and "[ON] " or "[OFF] ") .. displayName
         
         local success, err = pcall(callback, state)
         if not success then
             warn("[Gnom Hub] Ошибка в " .. name .. ": " .. tostring(err))
-            UpdateStatus("⚠️ Ошибка: " .. name, Color3.fromRGB(255, 100, 100))
+            UpdateStatus("Error: " .. name, Color3.fromRGB(255, 100, 100))
         end
     end)
     
@@ -358,11 +410,15 @@ local function CreateToggle(name, displayName, defaultState, callback)
 end
 
 local function CreateButton(displayName, callback)
+    layoutOrder = layoutOrder + 1
+    
     local Button = Instance.new("Frame")
     Button.Name = "Button_" .. displayName:gsub("%s+", "")
     Button.Size = UDim2.new(1, -10, 0, 45)
     Button.BackgroundColor3 = Color3.fromRGB(70, 110, 190)
     Button.BorderSizePixel = 0
+    Button.LayoutOrder = layoutOrder
+    Button.ZIndex = 3
     Button.Parent = ScrollFrame
     
     local ButtonCorner = Instance.new("UICorner")
@@ -375,12 +431,20 @@ local function CreateButton(displayName, callback)
     ButtonStroke.Parent = Button
     
     local TextButton = Instance.new("TextButton")
-    TextButton.Size = UDim2.new(1, 0, 1, 0)
+    TextButton.Name = "TextButton"
+    TextButton.Size = UDim2.new(1, -10, 1, -4)
+    TextButton.Position = UDim2.new(0, 5, 0, 2)
     TextButton.BackgroundTransparency = 1
-    TextButton.Text = "⚡ " .. displayName
-    TextButton.TextColor3 = Color3.white
+    TextButton.Text = displayName
+    TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     TextButton.Font = Enum.Font.GothamBold
     TextButton.TextSize = 15
+    TextButton.TextWrapped = true
+    TextButton.TextScaled = false
+    TextButton.TextXAlignment = Enum.TextXAlignment.Center
+    TextButton.TextYAlignment = Enum.TextYAlignment.Center
+    TextButton.AutoButtonColor = false
+    TextButton.ZIndex = 4
     TextButton.Parent = Button
     
     TextButton.MouseButton1Click:Connect(function()
@@ -397,7 +461,7 @@ local function CreateButton(displayName, callback)
         local success, err = pcall(callback)
         if not success then
             warn("[Gnom Hub] Ошибка: " .. tostring(err))
-            UpdateStatus("⚠️ Ошибка выполнения", Color3.fromRGB(255, 100, 100))
+            UpdateStatus("Execution Error", Color3.fromRGB(255, 100, 100))
         end
     end)
     
@@ -409,13 +473,13 @@ end
 -- ██████████████████████████████████████████████████████████████
 
 -- РАЗДЕЛ: ДВИЖЕНИЕ
-CreateSection("ДВИЖЕНИЕ")
+CreateSection("MOVEMENT")
 
 -- Телепорт вперед
-CreateButton("Телепорт вперед (25 studs)", function()
+CreateButton("Teleport Forward (25 studs)", function()
     local char, hum, root = getChar()
     if not root then
-        UpdateStatus("⚠️ Персонаж не найден", Color3.fromRGB(255, 150, 100))
+        UpdateStatus("Character not found", Color3.fromRGB(255, 150, 100))
         return
     end
     
@@ -423,18 +487,17 @@ CreateButton("Телепорт вперед (25 studs)", function()
     local targetPos = root.Position + (lookVector * GnomHub.Settings.TeleportDistance)
     
     root.CFrame = CFrame.new(targetPos, targetPos + lookVector)
-    UpdateStatus("✅ Телепорт выполнен", Color3.fromRGB(100, 255, 150))
+    UpdateStatus("Teleport Complete", Color3.fromRGB(100, 255, 150))
 end)
 
 -- Телепорт на базу
-CreateButton("Телепорт на базу", function()
+CreateButton("Teleport to Base", function()
     local char, hum, root = getChar()
     if not root then
-        UpdateStatus("⚠️ Персонаж не найден", Color3.fromRGB(255, 150, 100))
+        UpdateStatus("Character not found", Color3.fromRGB(255, 150, 100))
         return
     end
     
-    -- Поиск базы игрока
     local possibleBases = {
         LocalPlayer.Name .. "Base",
         LocalPlayer.Name .. "'s Base",
@@ -472,23 +535,23 @@ CreateButton("Телепорт на базу", function()
             local primaryPart = foundBase.PrimaryPart or foundBase:FindFirstChildWhichIsA("BasePart")
             if primaryPart then
                 root.CFrame = primaryPart.CFrame + Vector3.new(0, 5, 0)
-                UpdateStatus("✅ Телепорт на базу выполнен", Color3.fromRGB(100, 255, 150))
+                UpdateStatus("Teleported to Base", Color3.fromRGB(100, 255, 150))
             end
         elseif foundBase:IsA("BasePart") then
             root.CFrame = foundBase.CFrame + Vector3.new(0, 5, 0)
-            UpdateStatus("✅ Телепорт на базу выполнен", Color3.fromRGB(100, 255, 150))
+            UpdateStatus("Teleported to Base", Color3.fromRGB(100, 255, 150))
         end
     else
-        UpdateStatus("⚠️ База не найдена", Color3.fromRGB(255, 150, 100))
+        UpdateStatus("Base not found", Color3.fromRGB(255, 150, 100))
     end
 end)
 
 -- Полет (ИСПРАВЛЕНО)
-CreateToggle("Fly", "Полет (WASD + Space/Shift)", false, function(enabled)
+CreateToggle("Fly", "Fly (WASD + Space/Shift)", false, function(enabled)
     if enabled then
         local char, hum, root = getChar()
         if not char or not root then
-            UpdateStatus("⚠️ Персонаж не найден", Color3.fromRGB(255, 150, 100))
+            UpdateStatus("Character not found", Color3.fromRGB(255, 150, 100))
             GnomHub.Enabled.Fly = false
             return
         end
@@ -515,13 +578,11 @@ CreateToggle("Fly", "Полет (WASD + Space/Shift)", false, function(enabled)
             local cam = Workspace.CurrentCamera
             if not cam then return end
             
-            -- Обновляем BodyGyro для ориентации
             local gyro = currentRoot:FindFirstChild("GnomHub_FlyGyro")
             if gyro then
                 gyro.CFrame = cam.CFrame
             end
             
-            -- Считаем направление движения
             local velocity = Vector3.zero
             local speed = GnomHub.Settings.FlySpeed
             
@@ -544,14 +605,13 @@ CreateToggle("Fly", "Полет (WASD + Space/Shift)", false, function(enabled)
                 velocity = velocity - Vector3.new(0, speed, 0)
             end
             
-            -- Применяем скорость
             local bodyVel = currentRoot:FindFirstChild("GnomHub_FlyVelocity")
             if bodyVel then
                 bodyVel.Velocity = velocity
             end
         end)
         
-        UpdateStatus("✅ Полет активирован", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("Fly Activated", Color3.fromRGB(100, 255, 150))
     else
         if GnomHub.Connections.Fly then
             GnomHub.Connections.Fly:Disconnect()
@@ -567,12 +627,12 @@ CreateToggle("Fly", "Полет (WASD + Space/Shift)", false, function(enabled)
             if bodyGyro then bodyGyro:Destroy() end
         end
         
-        UpdateStatus("❌ Полет деактивирован", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("Fly Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- NoClip (ПОЛНОСТЬЮ ИСПРАВЛЕНО)
-CreateToggle("NoClip", "NoClip (сквозь стены)", false, function(enabled)
+CreateToggle("NoClip", "NoClip (through walls)", false, function(enabled)
     if enabled then
         GnomHub.Connections.NoClip = RunService.Stepped:Connect(function()
             if not GnomHub.Enabled.NoClip then return end
@@ -587,7 +647,7 @@ CreateToggle("NoClip", "NoClip (сквозь стены)", false, function(enabl
             end
         end)
         
-        UpdateStatus("✅ NoClip активирован", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("NoClip Activated", Color3.fromRGB(100, 255, 150))
     else
         if GnomHub.Connections.NoClip then
             GnomHub.Connections.NoClip:Disconnect()
@@ -598,7 +658,6 @@ CreateToggle("NoClip", "NoClip (сквозь стены)", false, function(enabl
         if char then
             for _, part in pairs(char:GetDescendants()) do
                 if part:IsA("BasePart") then
-                    -- Восстанавливаем коллизии, кроме HumanoidRootPart
                     if part.Name == "HumanoidRootPart" then
                         part.CanCollide = false
                     else
@@ -608,37 +667,37 @@ CreateToggle("NoClip", "NoClip (сквозь стены)", false, function(enabl
             end
         end
         
-        UpdateStatus("❌ NoClip деактивирован", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("NoClip Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- Ускорение ходьбы (ИСПРАВЛЕНО)
-CreateToggle("Speed", "Ускорение ходьбы", false, function(enabled)
-    GnomHub.Connections.Speed = RunService.Heartbeat:Connect(function()
-        local char, hum = getChar()
-        if not hum then return end
-        
-        if GnomHub.Enabled.Speed then
-            hum.WalkSpeed = GnomHub.Settings.WalkSpeed
-        else
-            hum.WalkSpeed = GnomHub.Settings.OriginalWalkSpeed
-            
-            if GnomHub.Connections.Speed then
-                GnomHub.Connections.Speed:Disconnect()
-                GnomHub.Connections.Speed = nil
-            end
-        end
-    end)
-    
+CreateToggle("Speed", "Walk Speed Boost", false, function(enabled)
     if enabled then
-        UpdateStatus("✅ Ускорение активировано", Color3.fromRGB(100, 255, 150))
+        GnomHub.Connections.Speed = RunService.Heartbeat:Connect(function()
+            local char, hum = getChar()
+            if not hum then return end
+            
+            if GnomHub.Enabled.Speed then
+                hum.WalkSpeed = GnomHub.Settings.WalkSpeed
+            else
+                hum.WalkSpeed = GnomHub.Settings.OriginalWalkSpeed
+                
+                if GnomHub.Connections.Speed then
+                    GnomHub.Connections.Speed:Disconnect()
+                    GnomHub.Connections.Speed = nil
+                end
+            end
+        end)
+        
+        UpdateStatus("Speed Activated", Color3.fromRGB(100, 255, 150))
     else
-        UpdateStatus("❌ Ускорение деактивировано", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("Speed Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- Бесконечный прыжок
-CreateToggle("InfinityJump", "Бесконечный прыжок", false, function(enabled)
+CreateToggle("InfinityJump", "Infinite Jump", false, function(enabled)
     if enabled then
         GnomHub.Connections.InfinityJump = UserInputService.JumpRequest:Connect(function()
             if not GnomHub.Enabled.InfinityJump then return end
@@ -649,22 +708,22 @@ CreateToggle("InfinityJump", "Бесконечный прыжок", false, funct
             end
         end)
         
-        UpdateStatus("✅ Бесконечный прыжок активирован", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("Infinite Jump Activated", Color3.fromRGB(100, 255, 150))
     else
         if GnomHub.Connections.InfinityJump then
             GnomHub.Connections.InfinityJump:Disconnect()
             GnomHub.Connections.InfinityJump = nil
         end
         
-        UpdateStatus("❌ Бесконечный прыжок деактивирован", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("Infinite Jump Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- РАЗДЕЛ: ВИЗУАЛИЗАЦИЯ
-CreateSection("ВИЗУАЛИЗАЦИЯ")
+CreateSection("VISUALIZATION")
 
 -- ESP (УЛУЧШЕНО)
-CreateToggle("ESP", "ESP (подсветка)", false, function(enabled)
+CreateToggle("ESP", "ESP (highlighting)", false, function(enabled)
     if enabled then
         if not GnomHub.ESP_Folder then
             GnomHub.ESP_Folder = Instance.new("Folder")
@@ -675,7 +734,6 @@ CreateToggle("ESP", "ESP (подсветка)", false, function(enabled)
         local function createESP()
             if not GnomHub.Enabled.ESP then return end
             
-            -- Очистка старых ESP
             if GnomHub.ESP_Folder then
                 GnomHub.ESP_Folder:ClearAllChildren()
             end
@@ -683,7 +741,6 @@ CreateToggle("ESP", "ESP (подсветка)", false, function(enabled)
             local myChar, myHum, myRoot = getChar()
             if not myRoot then return end
             
-            -- ESP для Brainrot
             for _, obj in pairs(Workspace:GetDescendants()) do
                 if obj:IsA("BasePart") and obj.Name:lower():find("brainrot") then
                     local distance = (myRoot.Position - obj.Position).Magnitude
@@ -698,14 +755,13 @@ CreateToggle("ESP", "ESP (подсветка)", false, function(enabled)
                     local label = Instance.new("TextLabel")
                     label.Size = UDim2.new(1, 0, 1, 0)
                     label.BackgroundTransparency = 1
-                    label.Text = string.format("🧠 BRAINROT\n%.0fm", distance)
+                    label.Text = string.format("BRAINROT\n%.0fm", distance)
                     label.TextColor3 = Color3.fromRGB(255, 100, 200)
                     label.Font = Enum.Font.GothamBold
                     label.TextSize = 14
                     label.TextStrokeTransparency = 0.3
                     label.Parent = billboard
                     
-                    -- Подсветка
                     local highlight = Instance.new("Highlight")
                     highlight.FillColor = Color3.fromRGB(255, 50, 150)
                     highlight.OutlineColor = Color3.fromRGB(255, 200, 255)
@@ -716,7 +772,6 @@ CreateToggle("ESP", "ESP (подсветка)", false, function(enabled)
                 end
             end
             
-            -- ESP для игроков
             for _, player in pairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer and player.Character then
                     local playerRoot = player.Character:FindFirstChild("HumanoidRootPart")
@@ -735,14 +790,13 @@ CreateToggle("ESP", "ESP (подсветка)", false, function(enabled)
                         local label = Instance.new("TextLabel")
                         label.Size = UDim2.new(1, 0, 1, 0)
                         label.BackgroundTransparency = 1
-                        label.Text = string.format("👤 %s\n%.0f HP | %.0fm", player.Name, playerHum.Health, distance)
+                        label.Text = string.format("%s\n%.0f HP | %.0fm", player.Name, playerHum.Health, distance)
                         label.TextColor3 = Color3.fromRGB(100, 200, 255)
                         label.Font = Enum.Font.GothamBold
                         label.TextSize = 12
                         label.TextStrokeTransparency = 0.3
                         label.Parent = billboard
                         
-                        -- Подсветка игрока
                         local highlight = Instance.new("Highlight")
                         highlight.FillColor = Color3.fromRGB(100, 150, 255)
                         highlight.OutlineColor = Color3.fromRGB(200, 220, 255)
@@ -755,7 +809,6 @@ CreateToggle("ESP", "ESP (подсветка)", false, function(enabled)
             end
         end
         
-        -- Обновление ESP
         GnomHub.Connections.ESP = RunService.Heartbeat:Connect(function()
             if not GnomHub.Enabled.ESP then return end
             
@@ -766,7 +819,7 @@ CreateToggle("ESP", "ESP (подсветка)", false, function(enabled)
         end)
         
         createESP()
-        UpdateStatus("✅ ESP активирован", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("ESP Activated", Color3.fromRGB(100, 255, 150))
     else
         if GnomHub.Connections.ESP then
             GnomHub.Connections.ESP:Disconnect()
@@ -778,15 +831,15 @@ CreateToggle("ESP", "ESP (подсветка)", false, function(enabled)
             GnomHub.ESP_Folder = nil
         end
         
-        UpdateStatus("❌ ESP деактивирован", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("ESP Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- РАЗДЕЛ: АВТОМАТИЗАЦИЯ
-CreateSection("АВТОМАТИЗАЦИЯ")
+CreateSection("AUTOMATION")
 
 -- Авто-фарм монет (ИСПРАВЛЕНО)
-CreateToggle("AutoFarm", "Авто-фарм монет", false, function(enabled)
+CreateToggle("AutoFarm", "Auto-Farm Coins", false, function(enabled)
     if enabled then
         GnomHub.Connections.AutoFarm = RunService.Heartbeat:Connect(function()
             if not GnomHub.Enabled.AutoFarm then
@@ -800,7 +853,6 @@ CreateToggle("AutoFarm", "Авто-фарм монет", false, function(enabled
             local char, hum, root = getChar()
             if not root then return end
             
-            -- Ищем ближайшую монету
             local closestCoin = nil
             local closestDistance = math.huge
             
@@ -825,19 +877,19 @@ CreateToggle("AutoFarm", "Авто-фарм монет", false, function(enabled
             end
         end)
         
-        UpdateStatus("✅ Авто-фарм активирован", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("Auto-Farm Activated", Color3.fromRGB(100, 255, 150))
     else
         if GnomHub.Connections.AutoFarm then
             GnomHub.Connections.AutoFarm:Disconnect()
             GnomHub.Connections.AutoFarm = nil
         end
         
-        UpdateStatus("❌ Авто-фарм деактивирован", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("Auto-Farm Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- Авто-кража Brainrot (ИСПРАВЛЕНО)
-CreateToggle("AutoStealBrainrot", "Авто-кража Brainrot", false, function(enabled)
+CreateToggle("AutoStealBrainrot", "Auto-Steal Brainrot", false, function(enabled)
     if enabled then
         GnomHub.Connections.AutoSteal = RunService.Heartbeat:Connect(function()
             if not GnomHub.Enabled.AutoStealBrainrot then
@@ -851,7 +903,6 @@ CreateToggle("AutoStealBrainrot", "Авто-кража Brainrot", false, functio
             local char, hum, root = getChar()
             if not root then return end
             
-            -- Проверяем, есть ли Brainrot в руках
             local hasBrainrot = false
             for _, obj in pairs(char:GetDescendants()) do
                 if obj:IsA("BasePart") and obj.Name:lower():find("brainrot") then
@@ -861,7 +912,6 @@ CreateToggle("AutoStealBrainrot", "Авто-кража Brainrot", false, functio
             end
             
             if hasBrainrot then
-                -- Если есть Brainrot, телепортируемся на базу
                 local baseFound = false
                 
                 local possibleBases = {
@@ -889,13 +939,11 @@ CreateToggle("AutoStealBrainrot", "Авто-кража Brainrot", false, functio
                 
                 task.wait(2)
             else
-                -- Ищем Brainrot
                 local closestBrainrot = nil
                 local closestDistance = math.huge
                 
                 for _, obj in pairs(Workspace:GetDescendants()) do
                     if obj:IsA("BasePart") and obj.Name:lower():find("brainrot") then
-                        -- Проверяем, что это не Brainrot у другого игрока
                         local isInPlayer = false
                         local parent = obj.Parent
                         while parent do
@@ -920,7 +968,6 @@ CreateToggle("AutoStealBrainrot", "Авто-кража Brainrot", false, functio
                     root.CFrame = CFrame.new(closestBrainrot.Position + Vector3.new(0, 2, 0))
                     task.wait(0.5)
                     
-                    -- Пытаемся активировать ProximityPrompt
                     local prompt = closestBrainrot:FindFirstChildOfClass("ProximityPrompt")
                     if prompt and fireproximityprompt then
                         fireproximityprompt(prompt)
@@ -933,22 +980,22 @@ CreateToggle("AutoStealBrainrot", "Авто-кража Brainrot", false, functio
             end
         end)
         
-        UpdateStatus("✅ Авто-кража активирована", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("Auto-Steal Activated", Color3.fromRGB(100, 255, 150))
     else
         if GnomHub.Connections.AutoSteal then
             GnomHub.Connections.AutoSteal:Disconnect()
             GnomHub.Connections.AutoSteal = nil
         end
         
-        UpdateStatus("❌ Авто-кража деактивирована", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("Auto-Steal Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- РАЗДЕЛ: ЗАЩИТА
-CreateSection("ЗАЩИТА")
+CreateSection("PROTECTION")
 
 -- Анти-AFK
-CreateToggle("AntiAfk", "Анти-АФК", false, function(enabled)
+CreateToggle("AntiAfk", "Anti-AFK", false, function(enabled)
     if enabled then
         local VirtualUser = game:GetService("VirtualUser")
         
@@ -957,32 +1004,32 @@ CreateToggle("AntiAfk", "Анти-АФК", false, function(enabled)
             VirtualUser:ClickButton2(Vector2.new())
         end)
         
-        UpdateStatus("✅ Анти-АФК активирован", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("Anti-AFK Activated", Color3.fromRGB(100, 255, 150))
     else
         if GnomHub.Connections.AntiAfk then
             GnomHub.Connections.AntiAfk:Disconnect()
             GnomHub.Connections.AntiAfk = nil
         end
         
-        UpdateStatus("❌ Анти-АФК деактивирован", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("Anti-AFK Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- Анти-Кик
-CreateToggle("AntiKick", "Анти-Кик", true, function(enabled)
+CreateToggle("AntiKick", "Anti-Kick", true, function(enabled)
     GnomHub.Enabled.AntiKick = enabled
     SecuritySystem.Protected = enabled
     
     if enabled then
         ProtectScript()
-        UpdateStatus("✅ Анти-Кик активирован", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("Anti-Kick Activated", Color3.fromRGB(100, 255, 150))
     else
-        UpdateStatus("⚠️ Анти-Кик деактивирован", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("Anti-Kick Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- God Mode (ИСПРАВЛЕНО)
-CreateToggle("GodMode", "Режим бога", false, function(enabled)
+CreateToggle("GodMode", "God Mode", false, function(enabled)
     if enabled then
         GnomHub.Connections.GodMode = RunService.Heartbeat:Connect(function()
             if not GnomHub.Enabled.GodMode then
@@ -999,19 +1046,19 @@ CreateToggle("GodMode", "Режим бога", false, function(enabled)
             end
         end)
         
-        UpdateStatus("✅ Режим бога активирован", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("God Mode Activated", Color3.fromRGB(100, 255, 150))
     else
         if GnomHub.Connections.GodMode then
             GnomHub.Connections.GodMode:Disconnect()
             GnomHub.Connections.GodMode = nil
         end
         
-        UpdateStatus("❌ Режим бога деактивирован", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("God Mode Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- Анти-Рагдолл
-CreateToggle("AntiRagdoll", "Анти-Рагдолл", false, function(enabled)
+CreateToggle("AntiRagdoll", "Anti-Ragdoll", false, function(enabled)
     if enabled then
         GnomHub.Connections.AntiRagdoll = RunService.Stepped:Connect(function()
             if not GnomHub.Enabled.AntiRagdoll then
@@ -1030,7 +1077,6 @@ CreateToggle("AntiRagdoll", "Анти-Рагдолл", false, function(enabled)
                 hum:ChangeState(Enum.HumanoidStateType.GettingUp)
             end
             
-            -- Удаляем физические эффекты
             for _, obj in pairs(char:GetDescendants()) do
                 if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("BodyForce") then
                     if not obj.Name:find("GnomHub") then
@@ -1040,28 +1086,26 @@ CreateToggle("AntiRagdoll", "Анти-Рагдолл", false, function(enabled)
             end
         end)
         
-        UpdateStatus("✅ Анти-Рагдолл активирован", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("Anti-Ragdoll Activated", Color3.fromRGB(100, 255, 150))
     else
         if GnomHub.Connections.AntiRagdoll then
             GnomHub.Connections.AntiRagdoll:Disconnect()
             GnomHub.Connections.AntiRagdoll = nil
         end
         
-        UpdateStatus("❌ Анти-Рагдолл деактивирован", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("Anti-Ragdoll Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- РАЗДЕЛ: УТИЛИТЫ
-CreateSection("УТИЛИТЫ")
+CreateSection("UTILITIES")
 
 -- Уничтожить GUI
-CreateButton("Уничтожить GUI и отключить все", function()
-    -- Отключаем все функции
+CreateButton("Destroy GUI and Disable All", function()
     for name, _ in pairs(GnomHub.Enabled) do
         GnomHub.Enabled[name] = false
     end
     
-    -- Отключаем все соединения
     for name, connection in pairs(GnomHub.Connections) do
         if connection then
             pcall(function()
@@ -1070,12 +1114,10 @@ CreateButton("Уничтожить GUI и отключить все", function()
         end
     end
     
-    -- Удаляем ESP
     if GnomHub.ESP_Folder then
         GnomHub.ESP_Folder:Destroy()
     end
     
-    -- Удаляем объекты полета
     local char, hum, root = getChar()
     if root then
         for _, obj in pairs(root:GetChildren()) do
@@ -1085,7 +1127,6 @@ CreateButton("Уничтожить GUI и отключить все", function()
         end
     end
     
-    -- Восстанавливаем параметры персонажа
     if char and hum then
         hum.WalkSpeed = GnomHub.Settings.OriginalWalkSpeed
         hum.JumpPower = GnomHub.Settings.OriginalJumpPower
@@ -1100,8 +1141,8 @@ CreateButton("Уничтожить GUI и отключить все", function()
     ScreenGui:Destroy()
     
     print("=======================================")
-    print("GNOM HUB v3.0 полностью выгружен")
-    print("Все функции отключены и очищены")
+    print("GNOM HUB v3.1 fully unloaded")
+    print("All features disabled and cleaned")
     print("=======================================")
 end)
 
@@ -1109,11 +1150,9 @@ end)
 -- ИНИЦИАЛИЗАЦИЯ И АВТООБНОВЛЕНИЕ
 -- ██████████████████████████████████████████████████████████████
 
--- Обработчик респавна персонажа
 LocalPlayer.CharacterAdded:Connect(function(newChar)
     task.wait(1)
     
-    -- Восстанавливаем функции Speed
     if GnomHub.Enabled.Speed then
         local newHum = newChar:WaitForChild("Humanoid")
         if newHum then
@@ -1121,12 +1160,7 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
         end
     end
     
-    -- Переподключаем NoClip
-    if GnomHub.Enabled.NoClip then
-        -- Соединение автоматически подключится через Heartbeat
-    end
-    
-    UpdateStatus("✅ Персонаж обновлен", Color3.fromRGB(100, 255, 150))
+    UpdateStatus("Character Updated", Color3.fromRGB(100, 255, 150))
 end)
 
 -- Горячая клавиша
@@ -1140,22 +1174,23 @@ end)
 
 -- Финальное сообщение
 print("=======================================")
-print("🧠 GNOM HUB v3.0 успешно загружен!")
+print("GNOM HUB v3.1 successfully loaded!")
 print("=======================================")
-print("Игра: Steal a Brainrot")
-print("Горячая клавиша: Right Control")
+print("Game: Steal a Brainrot")
+print("Hotkey: Right Control")
 print("")
-print("✅ Все функции исправлены:")
-print("  • Полет - полностью работает")
-print("  • NoClip - больше не телепортирует")
-print("  • Ускорение - стабильно")
-print("  • Авто-фарм - оптимизирован")
-print("  • Авто-кража - улучшена логика")
-print("  • ESP - добавлены Highlight")
+print("All features fixed:")
+print("  - Fly - fully working")
+print("  - NoClip - no longer teleports")
+print("  - Speed - stable")
+print("  - Auto-Farm - optimized")
+print("  - Auto-Steal - improved logic")
+print("  - ESP - added Highlights")
+print("  - GUI - all text now visible")
 print("")
-print("🛡️ Защита активна")
+print("Protection active")
 print("=======================================")
 
-UpdateStatus("✅ GNOM HUB v3.0 готов\n🛡️ Все функции исправлены", Color3.fromRGB(100, 255, 255))
+UpdateStatus("GNOM HUB v3.1 Ready\nAll features fixed", Color3.fromRGB(100, 255, 255))
 
 return GnomHub
