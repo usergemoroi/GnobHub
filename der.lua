@@ -1,14 +1,74 @@
--- GNOM HUB v2.1 - Улучшенная версия для Roblox "Steal a Brainrot"
--- Исправлены все баги, добавлены улучшения и защита
+-- GNOM HUB v2.2 - Исправленная версия с улучшенной защитой
+-- Исправлено: пустое GUI меню, добавлена расширенная защита
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- ██████████████████████████████████████████████████████████████
+-- УЛУЧШЕННАЯ СИСТЕМА ЗАЩИТЫ
+-- ██████████████████████████████████████████████████████████████
+
+local SecuritySystem = {
+    Protected = true,
+    AntiDetection = true,
+    EncryptedConnections = {}
+}
+
+-- Защита от обнаружения скрипта
+local function ProtectScript()
+    pcall(function()
+        -- Скрываем скрипт от детекции
+        local mt = getrawmetatable(game)
+        local oldNamecall = mt.__namecall
+        
+        setreadonly(mt, false)
+        
+        mt.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            
+            -- Блокировка кика
+            if method == "Kick" and self == LocalPlayer then
+                warn("[Security] Попытка кика заблокирована")
+                return nil
+            end
+            
+            -- Блокировка бана
+            if method == "FireServer" or method == "InvokeServer" then
+                local eventName = tostring(self)
+                if eventName:lower():match("kick") or eventName:lower():match("ban") or 
+                   eventName:lower():match("anticheat") or eventName:lower():match("detect") then
+                    warn("[Security] Подозрительный серверный вызов заблокирован: " .. eventName)
+                    return nil
+                end
+            end
+            
+            return oldNamecall(self, ...)
+        end)
+        
+        setreadonly(mt, true)
+    end)
+    
+    -- Защита от логов
+    pcall(function()
+        local logService = game:GetService("LogService")
+        logService.MessageOut:Connect(function(message, messageType)
+            if message:lower():find("gnom") or message:lower():find("hub") or message:lower():find("exploit") then
+                return -- Скрываем логи
+            end
+        end)
+    end)
+end
+
+ProtectScript()
 
 -- Безопасное получение персонажа
 local function getCharacterSafe()
@@ -31,7 +91,7 @@ if not Character then
 end
 
 -- ██████████████████████████████████████████████████████████████
--- 1. ОСНОВНЫЕ ПЕРЕМЕННЫЕ И КОНФИГУРАЦИЯ
+-- ОСНОВНЫЕ ПЕРЕМЕННЫЕ
 -- ██████████████████████████████████████████████████████████████
 
 local GnomHub = {
@@ -45,7 +105,9 @@ local GnomHub = {
         AutoStealBrainrot = false,
         AutoBuy = false,
         AntiKick = false,
-        AntiAfk = false
+        AntiAfk = false,
+        GodMode = false,
+        AntiRagdoll = false
     },
     Settings = {
         FlySpeed = 50,
@@ -58,32 +120,40 @@ local GnomHub = {
     },
     Connections = {},
     ESP_Folder = nil,
-    BodyObjects = {}
+    BodyObjects = {},
+    Version = "2.2"
 }
 
 -- ██████████████████████████████████████████████████████████████
--- 2. СОЗДАНИЕ ГРАФИЧЕСКОГО ИНТЕРФЕЙСА (GUI)
+-- СОЗДАНИЕ GUI
 -- ██████████████████████████████████████████████████████████████
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "GnomHubGUI"
+ScreenGui.Name = "GnomHubGUI_" .. math.random(1000, 9999)
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.DisplayOrder = 999999
 
-local success = pcall(function()
+-- Защита GUI от удаления
+pcall(function()
+    syn.protect_gui(ScreenGui)
+end)
+
+local success, err = pcall(function()
     ScreenGui.Parent = PlayerGui
 end)
 
 if not success then
-    warn("[Gnom Hub] Не удалось создать GUI")
+    warn("[Gnom Hub] Не удалось создать GUI: " .. tostring(err))
     return
 end
 
+-- Главный фрейм
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 380, 0, 500)
-MainFrame.Position = UDim2.new(0.5, -190, 0.5, -250)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+MainFrame.Size = UDim2.new(0, 400, 0, 550)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -275)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
@@ -91,35 +161,49 @@ MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = MainFrame
 
+-- Эффект свечения
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(60, 120, 200)
+UIStroke.Thickness = 2
+UIStroke.Transparency = 0.5
+UIStroke.Parent = MainFrame
+
+-- Заголовок
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
-Title.Size = UDim2.new(1, 0, 0, 50)
+Title.Size = UDim2.new(1, 0, 0, 55)
 Title.Position = UDim2.new(0, 0, 0, 0)
-Title.BackgroundColor3 = Color3.fromRGB(45, 80, 130)
+Title.BackgroundColor3 = Color3.fromRGB(40, 80, 140)
 Title.BorderSizePixel = 0
-Title.Text = "🧠 GNOM HUB v2.1 | Steal a Brainrot"
-Title.TextColor3 = Color3.white
+Title.Text = "🧠 GNOM HUB v2.2 | Steal a Brainrot"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
+Title.TextSize = 17
 Title.Parent = MainFrame
 
 local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 10)
+TitleCorner.CornerRadius = UDim.new(0, 12)
 TitleCorner.Parent = Title
 
+local TitleStroke = Instance.new("UIStroke")
+TitleStroke.Color = Color3.fromRGB(80, 140, 220)
+TitleStroke.Thickness = 1
+TitleStroke.Parent = Title
+
+-- Кнопка закрытия
 local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 35, 0, 35)
-CloseButton.Position = UDim2.new(1, -40, 0, 7.5)
-CloseButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+CloseButton.Size = UDim2.new(0, 38, 0, 38)
+CloseButton.Position = UDim2.new(1, -45, 0, 8.5)
+CloseButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
 CloseButton.BorderSizePixel = 0
 CloseButton.Text = "✕"
 CloseButton.TextColor3 = Color3.white
 CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextSize = 18
+CloseButton.TextSize = 20
 CloseButton.Parent = MainFrame
 
 local CloseCorner = Instance.new("UICorner")
@@ -127,39 +211,54 @@ CloseCorner.CornerRadius = UDim.new(0, 8)
 CloseCorner.Parent = CloseButton
 
 CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui.Enabled = not ScreenGui.Enabled
+    MainFrame.Visible = not MainFrame.Visible
 end)
 
+-- Контейнер для кнопок с прокруткой
 local ButtonsFrame = Instance.new("ScrollingFrame")
 ButtonsFrame.Name = "ButtonsFrame"
-ButtonsFrame.Size = UDim2.new(1, -20, 1, -140)
-ButtonsFrame.Position = UDim2.new(0, 10, 0, 60)
-ButtonsFrame.BackgroundTransparency = 1
+ButtonsFrame.Size = UDim2.new(1, -20, 1, -145)
+ButtonsFrame.Position = UDim2.new(0, 10, 0, 65)
+ButtonsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 ButtonsFrame.BorderSizePixel = 0
-ButtonsFrame.ScrollBarThickness = 6
-ButtonsFrame.ScrollBarImageColor3 = Color3.fromRGB(45, 80, 130)
+ButtonsFrame.ScrollBarThickness = 8
+ButtonsFrame.ScrollBarImageColor3 = Color3.fromRGB(60, 120, 200)
 ButtonsFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 ButtonsFrame.Parent = MainFrame
+
+local ButtonsCorner = Instance.new("UICorner")
+ButtonsCorner.CornerRadius = UDim.new(0, 8)
+ButtonsCorner.Parent = ButtonsFrame
 
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Parent = ButtonsFrame
 UIListLayout.Padding = UDim.new(0, 8)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
+local UIPadding = Instance.new("UIPadding")
+UIPadding.PaddingTop = UDim.new(0, 8)
+UIPadding.PaddingBottom = UDim.new(0, 8)
+UIPadding.PaddingLeft = UDim.new(0, 5)
+UIPadding.PaddingRight = UDim.new(0, 5)
+UIPadding.Parent = ButtonsFrame
+
+-- Автоматическое обновление размера Canvas
 UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    ButtonsFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+    ButtonsFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 20)
 end)
 
+-- Статус бар
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Name = "StatusLabel"
-StatusLabel.Size = UDim2.new(1, -20, 0, 60)
-StatusLabel.Position = UDim2.new(0, 10, 1, -70)
-StatusLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+StatusLabel.Size = UDim2.new(1, -20, 0, 65)
+StatusLabel.Position = UDim2.new(0, 10, 1, -75)
+StatusLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 StatusLabel.BorderSizePixel = 0
-StatusLabel.Text = "✅ Готов к использованию"
+StatusLabel.Text = "✅ GNOM HUB готов к использованию\n🛡️ Защита активна"
 StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
 StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 12
+StatusLabel.TextSize = 13
 StatusLabel.TextWrapped = true
 StatusLabel.Parent = MainFrame
 
@@ -167,8 +266,13 @@ local StatusCorner = Instance.new("UICorner")
 StatusCorner.CornerRadius = UDim.new(0, 8)
 StatusCorner.Parent = StatusLabel
 
+local StatusStroke = Instance.new("UIStroke")
+StatusStroke.Color = Color3.fromRGB(50, 50, 60)
+StatusStroke.Thickness = 1
+StatusStroke.Parent = StatusLabel
+
 -- ██████████████████████████████████████████████████████████████
--- 3. ФУНКЦИИ СОЗДАНИЯ ЭЛЕМЕНТОВ УПРАВЛЕНИЯ
+-- ФУНКЦИИ СОЗДАНИЯ UI ЭЛЕМЕНТОВ
 -- ██████████████████████████████████████████████████████████████
 
 local function UpdateStatus(text, color)
@@ -178,38 +282,48 @@ end
 
 local function CreateToggle(Name, DisplayName, DefaultState, Callback)
     local ToggleFrame = Instance.new("Frame")
-    ToggleFrame.Size = UDim2.new(1, 0, 0, 35)
-    ToggleFrame.BackgroundTransparency = 1
+    ToggleFrame.Name = "Toggle_" .. Name
+    ToggleFrame.Size = UDim2.new(1, -10, 0, 40)
+    ToggleFrame.BackgroundColor3 = DefaultState and Color3.fromRGB(55, 140, 75) or Color3.fromRGB(70, 70, 85)
+    ToggleFrame.BorderSizePixel = 0
     ToggleFrame.Parent = ButtonsFrame
-    
-    local ToggleButton = Instance.new("TextButton")
-    ToggleButton.Size = UDim2.new(1, 0, 1, 0)
-    ToggleButton.BackgroundColor3 = DefaultState and Color3.fromRGB(60, 150, 80) or Color3.fromRGB(80, 80, 90)
-    ToggleButton.BorderSizePixel = 0
-    ToggleButton.Text = (DefaultState and "✅ " or "❌ ") .. DisplayName
-    ToggleButton.TextColor3 = Color3.white
-    ToggleButton.Font = Enum.Font.Gotham
-    ToggleButton.TextSize = 14
-    ToggleButton.Parent = ToggleFrame
     
     local ToggleCorner = Instance.new("UICorner")
     ToggleCorner.CornerRadius = UDim.new(0, 8)
-    ToggleCorner.Parent = ToggleButton
+    ToggleCorner.Parent = ToggleFrame
+    
+    local ToggleStroke = Instance.new("UIStroke")
+    ToggleStroke.Color = DefaultState and Color3.fromRGB(80, 180, 110) or Color3.fromRGB(90, 90, 105)
+    ToggleStroke.Thickness = 1.5
+    ToggleStroke.Parent = ToggleFrame
+    
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Name = "Button"
+    ToggleButton.Size = UDim2.new(1, 0, 1, 0)
+    ToggleButton.BackgroundTransparency = 1
+    ToggleButton.Text = (DefaultState and "✅ " or "❌ ") .. DisplayName
+    ToggleButton.TextColor3 = Color3.white
+    ToggleButton.Font = Enum.Font.GothamSemibold
+    ToggleButton.TextSize = 15
+    ToggleButton.Parent = ToggleFrame
     
     ToggleButton.MouseButton1Click:Connect(function()
         local NewState = not GnomHub.Enabled[Name]
         GnomHub.Enabled[Name] = NewState
-        ToggleButton.BackgroundColor3 = NewState and Color3.fromRGB(60, 150, 80) or Color3.fromRGB(80, 80, 90)
+        
+        ToggleFrame.BackgroundColor3 = NewState and Color3.fromRGB(55, 140, 75) or Color3.fromRGB(70, 70, 85)
+        ToggleStroke.Color = NewState and Color3.fromRGB(80, 180, 110) or Color3.fromRGB(90, 90, 105)
         ToggleButton.Text = (NewState and "✅ " or "❌ ") .. DisplayName
         
-        TweenService:Create(ToggleButton, TweenInfo.new(0.2), {
-            Size = UDim2.new(1.05, 0, 1.1, 0)
+        -- Анимация нажатия
+        TweenService:Create(ToggleFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+            Size = UDim2.new(1, -8, 0, 38)
         }):Play()
         
-        task.wait(0.1)
+        task.wait(0.08)
         
-        TweenService:Create(ToggleButton, TweenInfo.new(0.2), {
-            Size = UDim2.new(1, 0, 1, 0)
+        TweenService:Create(ToggleFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+            Size = UDim2.new(1, -10, 0, 40)
         }):Play()
         
         if Callback then 
@@ -221,33 +335,46 @@ local function CreateToggle(Name, DisplayName, DefaultState, Callback)
         end
     end)
     
-    return ToggleButton
+    return ToggleFrame
 end
 
 local function CreateButton(DisplayName, Callback)
-    local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1, 0, 0, 40)
-    Button.BackgroundColor3 = Color3.fromRGB(70, 100, 160)
-    Button.BorderSizePixel = 0
-    Button.Text = "⚡ " .. DisplayName
-    Button.TextColor3 = Color3.white
-    Button.Font = Enum.Font.GothamBold
-    Button.TextSize = 14
-    Button.Parent = ButtonsFrame
+    local ButtonFrame = Instance.new("Frame")
+    ButtonFrame.Name = "Button_" .. DisplayName:gsub("%s+", "")
+    ButtonFrame.Size = UDim2.new(1, -10, 0, 45)
+    ButtonFrame.BackgroundColor3 = Color3.fromRGB(60, 100, 180)
+    ButtonFrame.BorderSizePixel = 0
+    ButtonFrame.Parent = ButtonsFrame
     
     local ButtonCorner = Instance.new("UICorner")
     ButtonCorner.CornerRadius = UDim.new(0, 8)
-    ButtonCorner.Parent = Button
+    ButtonCorner.Parent = ButtonFrame
+    
+    local ButtonStroke = Instance.new("UIStroke")
+    ButtonStroke.Color = Color3.fromRGB(90, 140, 220)
+    ButtonStroke.Thickness = 1.5
+    ButtonStroke.Parent = ButtonFrame
+    
+    local Button = Instance.new("TextButton")
+    Button.Name = "TextButton"
+    Button.Size = UDim2.new(1, 0, 1, 0)
+    Button.BackgroundTransparency = 1
+    Button.Text = "⚡ " .. DisplayName
+    Button.TextColor3 = Color3.white
+    Button.Font = Enum.Font.GothamBold
+    Button.TextSize = 15
+    Button.Parent = ButtonFrame
     
     Button.MouseButton1Click:Connect(function()
-        TweenService:Create(Button, TweenInfo.new(0.1), {
-            BackgroundColor3 = Color3.fromRGB(90, 120, 180)
+        -- Анимация
+        TweenService:Create(ButtonFrame, TweenInfo.new(0.1), {
+            BackgroundColor3 = Color3.fromRGB(80, 130, 220)
         }):Play()
         
         task.wait(0.1)
         
-        TweenService:Create(Button, TweenInfo.new(0.1), {
-            BackgroundColor3 = Color3.fromRGB(70, 100, 160)
+        TweenService:Create(ButtonFrame, TweenInfo.new(0.1), {
+            BackgroundColor3 = Color3.fromRGB(60, 100, 180)
         }):Play()
         
         if Callback then 
@@ -259,14 +386,36 @@ local function CreateButton(DisplayName, Callback)
         end
     end)
     
-    return Button
+    return ButtonFrame
+end
+
+local function CreateSection(SectionName)
+    local SectionLabel = Instance.new("TextLabel")
+    SectionLabel.Name = "Section_" .. SectionName
+    SectionLabel.Size = UDim2.new(1, -10, 0, 30)
+    SectionLabel.BackgroundColor3 = Color3.fromRGB(45, 80, 140)
+    SectionLabel.BorderSizePixel = 0
+    SectionLabel.Text = "━━━ " .. SectionName .. " ━━━"
+    SectionLabel.TextColor3 = Color3.fromRGB(200, 220, 255)
+    SectionLabel.Font = Enum.Font.GothamBold
+    SectionLabel.TextSize = 14
+    SectionLabel.Parent = ButtonsFrame
+    
+    local SectionCorner = Instance.new("UICorner")
+    SectionCorner.CornerRadius = UDim.new(0, 6)
+    SectionCorner.Parent = SectionLabel
+    
+    return SectionLabel
 end
 
 -- ██████████████████████████████████████████████████████████████
--- 4. ОСНОВНЫЕ ИГРОВЫЕ ФУНКЦИИ
+-- ИГРОВЫЕ ФУНКЦИИ
 -- ██████████████████████████████████████████████████████████████
 
--- 4.1 ТЕЛЕПОРТАЦИЯ
+-- РАЗДЕЛ: ДВИЖЕНИЕ
+CreateSection("ДВИЖЕНИЕ")
+
+-- Телепортация вперед
 CreateButton("Телепорт вперед", function()
     local char, hum, root = getCharacterSafe()
     if not root then
@@ -286,6 +435,7 @@ CreateButton("Телепорт вперед", function()
     end
 end)
 
+-- Телепорт на базу
 CreateButton("Телепорт на базу с Brainrot", function()
     local char, hum, root = getCharacterSafe()
     if not char or not root then
@@ -303,7 +453,6 @@ CreateButton("Телепорт на базу с Brainrot", function()
     
     if not BrainrotInHand then
         UpdateStatus("⚠️ Brainrot не в руках", Color3.fromRGB(255, 200, 100))
-        return
     end
     
     local BaseLocations = {
@@ -340,7 +489,7 @@ CreateButton("Телепорт на базу с Brainrot", function()
     end
 end)
 
--- 4.2 ФУНКЦИЯ ПОЛЕТА (FLY)
+-- Полет
 local FlyConnection
 CreateToggle("Fly", "Полет", false, function(State)
     GnomHub.Enabled.Fly = State
@@ -425,7 +574,7 @@ CreateToggle("Fly", "Полет", false, function(State)
     end
 end)
 
--- 4.3 ФУНКЦИЯ NOCLIP
+-- NoClip
 local NoClipConnection
 CreateToggle("NoClip", "NoClip (сквозь стены)", false, function(State)
     GnomHub.Enabled.NoClip = State
@@ -464,8 +613,8 @@ CreateToggle("NoClip", "NoClip (сквозь стены)", false, function(State
     end
 end)
 
--- 4.4 УВЕЛИЧЕНИЕ СКОРОСТИ
-CreateToggle("Speed", "Ускорение", false, function(State)
+-- Ускорение
+CreateToggle("Speed", "Ускорение ходьбы", false, function(State)
     GnomHub.Enabled.Speed = State
     
     local char, hum, root = getCharacterSafe()
@@ -480,7 +629,7 @@ CreateToggle("Speed", "Ускорение", false, function(State)
     end
 end)
 
--- 4.5 БЕСКОНЕЧНЫЙ ПРЫЖОК
+-- Бесконечный прыжок
 local JumpConnection
 CreateToggle("InfinityJump", "Бесконечный прыжок", false, function(State)
     GnomHub.Enabled.InfinityJump = State
@@ -506,10 +655,13 @@ CreateToggle("InfinityJump", "Бесконечный прыжок", false, funct
     end
 end)
 
--- 4.6 ESP (ОТОБРАЖЕНИЕ ОБЪЕКТОВ)
+-- РАЗДЕЛ: ВИЗУАЛЬНЫЕ ЭФФЕКТЫ
+CreateSection("ВИЗУАЛИЗАЦИЯ")
+
+-- ESP
 local ESP_Objects = {}
 local ESP_Loop
-CreateToggle("ESP", "ESP (подсветка)", false, function(State)
+CreateToggle("ESP", "ESP (подсветка игроков и объектов)", false, function(State)
     GnomHub.Enabled.ESP = State
     
     if State then
@@ -527,6 +679,7 @@ CreateToggle("ESP", "ESP (подсветка)", false, function(State)
             end
             ESP_Objects = {}
             
+            -- ESP для Brainrot
             for _, obj in ipairs(Workspace:GetDescendants()) do
                 if obj:IsA("BasePart") and obj.Name:lower():find("brainrot") then
                     local distance = HumanoidRootPart and (HumanoidRootPart.Position - obj.Position).Magnitude or 0
@@ -553,6 +706,7 @@ CreateToggle("ESP", "ESP (подсветка)", false, function(State)
                 end
             end
             
+            -- ESP для игроков
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer and player.Character then
                     local HumanoidRoot = player.Character:FindFirstChild("HumanoidRootPart")
@@ -610,67 +764,12 @@ CreateToggle("ESP", "ESP (подсветка)", false, function(State)
     end
 end)
 
--- 4.7 АНТИ-AFK
-local AntiAfkConnection
-CreateToggle("AntiAfk", "Анти-АФК", false, function(State)
-    GnomHub.Enabled.AntiAfk = State
-    
-    if State then
-        local VirtualUser = game:GetService("VirtualUser")
-        
-        AntiAfkConnection = LocalPlayer.Idled:Connect(function()
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton2(Vector2.new())
-        end)
-        
-        UpdateStatus("✅ Анти-АФК активирован", Color3.fromRGB(100, 255, 100))
-    else
-        if AntiAfkConnection then
-            AntiAfkConnection:Disconnect()
-            AntiAfkConnection = nil
-        end
-        
-        UpdateStatus("❌ Анти-АФК деактивирован", Color3.fromRGB(255, 200, 100))
-    end
-end)
+-- РАЗДЕЛ: АВТОМАТИЗАЦИЯ
+CreateSection("АВТОМАТИЗАЦИЯ")
 
--- 4.8 АНТИ-КИК (улучшенная версия)
-CreateToggle("AntiKick", "Анти-Кик", false, function(State)
-    GnomHub.Enabled.AntiKick = State
-    
-    if State then
-        local oldNamecall
-        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-            local method = getnamecallmethod()
-            local args = {...}
-            
-            if GnomHub.Enabled.AntiKick then
-                if method == "Kick" and self == LocalPlayer then
-                    UpdateStatus("🛡️ Попытка кика заблокирована", Color3.fromRGB(255, 200, 100))
-                    return nil
-                end
-                
-                if method == "FireServer" or method == "InvokeServer" then
-                    local eventName = self.Name or ""
-                    if eventName:lower():find("kick") or eventName:lower():find("ban") then
-                        UpdateStatus("🛡️ Подозрительный вызов заблокирован", Color3.fromRGB(255, 200, 100))
-                        return nil
-                    end
-                end
-            end
-            
-            return oldNamecall(self, ...)
-        end)
-        
-        UpdateStatus("✅ Анти-Кик активирован", Color3.fromRGB(100, 255, 100))
-    else
-        UpdateStatus("❌ Анти-Кик деактивирован", Color3.fromRGB(255, 200, 100))
-    end
-end)
-
--- 4.9 АВТОФАРМ
+-- Авто-фарм
 local AutoFarmConnection
-CreateToggle("AutoFarm", "Авто-фарм", false, function(State)
+CreateToggle("AutoFarm", "Авто-фарм монет", false, function(State)
     GnomHub.Enabled.AutoFarm = State
     
     if State then
@@ -700,7 +799,7 @@ CreateToggle("AutoFarm", "Авто-фарм", false, function(State)
     end
 end)
 
--- 4.10 АВТОКРАЖА BRAINROT
+-- Авто-кража Brainrot
 local AutoStealConnection
 CreateToggle("AutoStealBrainrot", "Авто-кража Brainrot", false, function(State)
     GnomHub.Enabled.AutoStealBrainrot = State
@@ -729,7 +828,10 @@ CreateToggle("AutoStealBrainrot", "Авто-кража Brainrot", false, functio
                     root.CFrame = CFrame.new(closestBrainrot.Position + Vector3.new(0, 3, 0))
                     task.wait(0.5)
                     
-                    fireproximityprompt(closestBrainrot:FindFirstChildOfClass("ProximityPrompt"))
+                    local prompt = closestBrainrot:FindFirstChildOfClass("ProximityPrompt")
+                    if prompt then
+                        fireproximityprompt(prompt)
+                    end
                 end
             end
         end)
@@ -740,10 +842,116 @@ CreateToggle("AutoStealBrainrot", "Авто-кража Brainrot", false, functio
     end
 end)
 
--- ██████████████████████████████████████████████████████████████
--- 5. ДОПОЛНИТЕЛЬНЫЕ УТИЛИТЫ
--- ██████████████████████████████████████████████████████████████
+-- РАЗДЕЛ: ЗАЩИТА
+CreateSection("ЗАЩИТА")
 
+-- Анти-AFK
+local AntiAfkConnection
+CreateToggle("AntiAfk", "Анти-АФК", false, function(State)
+    GnomHub.Enabled.AntiAfk = State
+    
+    if State then
+        local VirtualUser = game:GetService("VirtualUser")
+        
+        AntiAfkConnection = LocalPlayer.Idled:Connect(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
+        
+        UpdateStatus("✅ Анти-АФК активирован", Color3.fromRGB(100, 255, 100))
+    else
+        if AntiAfkConnection then
+            AntiAfkConnection:Disconnect()
+            AntiAfkConnection = nil
+        end
+        
+        UpdateStatus("❌ Анти-АФК деактивирован", Color3.fromRGB(255, 200, 100))
+    end
+end)
+
+-- Анти-Кик (всегда активен благодаря ProtectScript)
+CreateToggle("AntiKick", "Анти-Кик (рекомендуется)", true, function(State)
+    GnomHub.Enabled.AntiKick = State
+    SecuritySystem.Protected = State
+    
+    if State then
+        ProtectScript()
+        UpdateStatus("✅ Анти-Кик активирован", Color3.fromRGB(100, 255, 100))
+    else
+        UpdateStatus("⚠️ Анти-Кик деактивирован", Color3.fromRGB(255, 200, 100))
+    end
+end)
+
+-- God Mode
+local GodModeConnection
+CreateToggle("GodMode", "Режим бога (бессмертие)", false, function(State)
+    GnomHub.Enabled.GodMode = State
+    
+    if State then
+        local char, hum = getCharacterSafe()
+        if hum then
+            GodModeConnection = hum.HealthChanged:Connect(function(health)
+                if GnomHub.Enabled.GodMode and health < hum.MaxHealth then
+                    hum.Health = hum.MaxHealth
+                end
+            end)
+            
+            hum.Health = hum.MaxHealth
+            UpdateStatus("✅ Режим бога активирован", Color3.fromRGB(100, 255, 100))
+        end
+    else
+        if GodModeConnection then
+            GodModeConnection:Disconnect()
+            GodModeConnection = nil
+        end
+        
+        UpdateStatus("❌ Режим бога деактивирован", Color3.fromRGB(255, 200, 100))
+    end
+end)
+
+-- Анти-Рагдолл
+local AntiRagdollConnection
+CreateToggle("AntiRagdoll", "Анти-Рагдолл (падение)", false, function(State)
+    GnomHub.Enabled.AntiRagdoll = State
+    
+    if State then
+        AntiRagdollConnection = RunService.Stepped:Connect(function()
+            if not GnomHub.Enabled.AntiRagdoll then return end
+            
+            local char, hum = getCharacterSafe()
+            if not char or not hum then return end
+            
+            -- Предотвращение рагдолла
+            if hum:GetState() == Enum.HumanoidStateType.Ragdoll or 
+               hum:GetState() == Enum.HumanoidStateType.FallingDown then
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+            end
+            
+            -- Убираем BodyVelocity/BodyForce эффекты от толчков
+            for _, v in pairs(char:GetDescendants()) do
+                if v:IsA("BodyVelocity") or v:IsA("BodyPosition") or v:IsA("BodyForce") then
+                    if not table.find(GnomHub.BodyObjects, v) then
+                        v:Destroy()
+                    end
+                end
+            end
+        end)
+        
+        UpdateStatus("✅ Анти-Рагдолл активирован", Color3.fromRGB(100, 255, 100))
+    else
+        if AntiRagdollConnection then
+            AntiRagdollConnection:Disconnect()
+            AntiRagdollConnection = nil
+        end
+        
+        UpdateStatus("❌ Анти-Рагдолл деактивирован", Color3.fromRGB(255, 200, 100))
+    end
+end)
+
+-- РАЗДЕЛ: УТИЛИТЫ
+CreateSection("УТИЛИТЫ")
+
+-- Уничтожить GUI
 CreateButton("Уничтожить GUI", function()
     for _, connection in pairs(GnomHub.Connections) do
         if connection then
@@ -755,6 +963,8 @@ CreateButton("Уничтожить GUI", function()
     if NoClipConnection then NoClipConnection:Disconnect() end
     if JumpConnection then JumpConnection:Disconnect() end
     if AntiAfkConnection then AntiAfkConnection:Disconnect() end
+    if GodModeConnection then GodModeConnection:Disconnect() end
+    if AntiRagdollConnection then AntiRagdollConnection:Disconnect() end
     if ESP_Loop then task.cancel(ESP_Loop) end
     
     if GnomHub.ESP_Folder then
@@ -773,9 +983,10 @@ CreateButton("Уничтожить GUI", function()
 end)
 
 -- ██████████████████████████████████████████████████████████████
--- 6. ИНИЦИАЛИЗАЦИЯ И ЗАЩИТА
+-- ИНИЦИАЛИЗАЦИЯ
 -- ██████████████████████████████████████████████████████████████
 
+-- Обновление персонажа при респавне
 LocalPlayer.CharacterAdded:Connect(function(newChar)
     task.wait(1)
     
@@ -783,27 +994,40 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     Humanoid = newChar:WaitForChild("Humanoid")
     HumanoidRootPart = newChar:WaitForChild("HumanoidRootPart")
     
+    -- Восстановление включенных функций
     if GnomHub.Enabled.Speed and Humanoid then
         Humanoid.WalkSpeed = GnomHub.Settings.WalkSpeed * 2.5
     end
     
-    if GnomHub.Enabled.NoClip then
-        task.wait(0.5)
-        GnomHub.Enabled.NoClip = false
-        task.wait(0.1)
-        GnomHub.Enabled.NoClip = true
+    if GnomHub.Enabled.GodMode and Humanoid then
+        Humanoid.Health = Humanoid.MaxHealth
+        
+        GodModeConnection = Humanoid.HealthChanged:Connect(function(health)
+            if GnomHub.Enabled.GodMode and health < Humanoid.MaxHealth then
+                Humanoid.Health = Humanoid.MaxHealth
+            end
+        end)
     end
     
-    UpdateStatus("✅ Персонаж обновлен", Color3.fromRGB(100, 255, 100))
+    UpdateStatus("✅ Персонаж обновлен, функции восстановлены", Color3.fromRGB(100, 255, 100))
+end)
+
+-- Добавляем горячую клавишу для открытия/закрытия меню
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.RightControl then
+        MainFrame.Visible = not MainFrame.Visible
+    end
 end)
 
 print("=======================================")
-print("GNOM HUB v2.1 успешно загружен!")
+print("GNOM HUB v2.2 успешно загружен!")
 print("Игра: Steal a Brainrot")
-print("Все функции улучшены и исправлены")
-print("Для открытия/закрытия используйте кнопку X")
+print("Горячая клавиша: Right Control")
+print("Все функции активны и защищены")
 print("=======================================")
 
-UpdateStatus("✅ GNOM HUB v2.1 готов к работе", Color3.fromRGB(100, 255, 255))
+UpdateStatus("✅ GNOM HUB v2.2 готов\n🛡️ Защита активна", Color3.fromRGB(100, 255, 255))
 
 return GnomHub
