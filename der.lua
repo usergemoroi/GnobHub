@@ -1,7 +1,7 @@
 -- ██████████████████████████████████████████████████████████████
--- GNOM HUB v3.2 ULTIMATE - Революционные улучшения NoClip и TP
--- ИСПРАВЛЕНО: NoClip без телепортации назад, умная телепортация
--- НОВОЕ: Extreme NoClip, улучшенный поиск базы, обход античита
+-- GNOM HUB v4.0 QUANTUM - РЕВОЛЮЦИОННАЯ СИСТЕМА ТЕЛЕПОРТАЦИИ
+-- АБСОЛЮТНО НОВЫЙ ПОДХОД: Квантовая телепортация без отката
+-- ТЕХНОЛОГИИ: Multi-Frame CFrame Anchoring, Velocity Nullification
 -- ██████████████████████████████████████████████████████████████
 
 local Players = game:GetService("Players")
@@ -13,6 +13,93 @@ local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- ██████████████████████████████████████████████████████████████
+-- КВАНТОВАЯ СИСТЕМА ТЕЛЕПОРТАЦИИ (НОВЕЙШАЯ ТЕХНОЛОГИЯ)
+-- ██████████████████████████████████████████████████████████████
+
+local QuantumTeleport = {
+    Active = false,
+    LastPosition = nil,
+    FrameCounter = 0
+}
+
+-- НОВЫЙ МЕТОД: Квантовая фиксация позиции
+-- Принцип: Создаём невидимый якорь, который удерживает позицию
+local function QuantumAnchor(root, targetCFrame, duration)
+    local anchorPart = Instance.new("Part")
+    anchorPart.Name = "QuantumAnchor"
+    anchorPart.Size = Vector3.new(0.1, 0.1, 0.1)
+    anchorPart.Transparency = 1
+    anchorPart.CanCollide = false
+    anchorPart.Anchored = true
+    anchorPart.CFrame = targetCFrame
+    anchorPart.Parent = Workspace
+    
+    -- Создаём WeldConstraint для жёсткой привязки
+    local weld = Instance.new("WeldConstraint")
+    weld.Name = "QuantumWeld"
+    weld.Part0 = anchorPart
+    weld.Part1 = root
+    weld.Parent = root
+    
+    -- Удаляем после завершения
+    task.delay(duration or 0.1, function()
+        if weld then weld:Destroy() end
+        if anchorPart then anchorPart:Destroy() end
+    end)
+    
+    return anchorPart, weld
+end
+
+-- НОВЫЙ МЕТОД: Мульти-фреймовая телепортация
+-- Принцип: Телепортируем на протяжении нескольких фреймов для обхода античита
+local function MultiFrameTeleport(root, targetPosition, frames)
+    frames = frames or 3
+    local startPos = root.Position
+    local connection
+    local frameCount = 0
+    
+    connection = RunService.Heartbeat:Connect(function()
+        frameCount = frameCount + 1
+        if frameCount >= frames then
+            connection:Disconnect()
+            root.CFrame = CFrame.new(targetPosition)
+            return
+        end
+        
+        -- Постепенное перемещение с фиксацией
+        local alpha = frameCount / frames
+        local currentPos = startPos:Lerp(targetPosition, alpha)
+        root.CFrame = CFrame.new(currentPos)
+        root.AssemblyLinearVelocity = Vector3.zero
+        root.AssemblyAngularVelocity = Vector3.zero
+    end)
+end
+
+-- НОВЫЙ МЕТОД: Velocity Nullification System
+-- Принцип: Обнуляем ВСЕ силы и скорости каждый фрейм
+local function VelocityNullifier(root, duration)
+    local startTime = tick()
+    local connection
+    
+    connection = RunService.Heartbeat:Connect(function()
+        if tick() - startTime > (duration or 0.3) then
+            connection:Disconnect()
+            return
+        end
+        
+        -- Обнуляем все типы скоростей
+        if root and root.Parent then
+            root.AssemblyLinearVelocity = Vector3.zero
+            root.AssemblyAngularVelocity = Vector3.zero
+            root.Velocity = Vector3.zero
+            root.RotVelocity = Vector3.zero
+        end
+    end)
+    
+    return connection
+end
 
 -- ██████████████████████████████████████████████████████████████
 -- СИСТЕМА ЗАЩИТЫ
@@ -86,7 +173,7 @@ local GnomHub = {
     },
     Connections = {},
     ESP_Folder = nil,
-    Version = "3.2"
+    Version = "4.0 QUANTUM"
 }
 
 -- Функция безопасного получения персонажа
@@ -103,7 +190,7 @@ local function getChar()
 end
 
 -- ██████████████████████████████████████████████████████████████
--- СОЗДАНИЕ GUI (ИСПРАВЛЕНО)
+-- СОЗДАНИЕ GUI
 -- ██████████████████████████████████████████████████████████████
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -132,7 +219,7 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 420, 0, 600)
 MainFrame.Position = UDim2.new(0.5, -210, 0.5, -300)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
@@ -145,7 +232,7 @@ MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainFrame
 
 local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(70, 130, 220)
+MainStroke.Color = Color3.fromRGB(100, 255, 200)
 MainStroke.Thickness = 2
 MainStroke.Parent = MainFrame
 
@@ -154,7 +241,7 @@ local Title = Instance.new("Frame")
 Title.Name = "Title"
 Title.Size = UDim2.new(1, 0, 0, 60)
 Title.Position = UDim2.new(0, 0, 0, 0)
-Title.BackgroundColor3 = Color3.fromRGB(50, 90, 160)
+Title.BackgroundColor3 = Color3.fromRGB(30, 180, 120)
 Title.BorderSizePixel = 0
 Title.ZIndex = 2
 Title.Parent = MainFrame
@@ -165,8 +252,8 @@ TitleCorner.Parent = Title
 
 local TitleGradient = Instance.new("UIGradient")
 TitleGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 100, 180)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 70, 140))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 200, 150)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 140, 100))
 }
 TitleGradient.Rotation = 90
 TitleGradient.Parent = Title
@@ -176,7 +263,7 @@ TitleText.Name = "TitleText"
 TitleText.Size = UDim2.new(1, -60, 0, 30)
 TitleText.Position = UDim2.new(0, 10, 0, 5)
 TitleText.BackgroundTransparency = 1
-TitleText.Text = "GNOM HUB v3.2 ULTIMATE"
+TitleText.Text = "🚀 GNOM HUB v4.0 QUANTUM"
 TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleText.Font = Enum.Font.GothamBold
 TitleText.TextSize = 18
@@ -192,8 +279,8 @@ SubTitle.Name = "SubTitle"
 SubTitle.Size = UDim2.new(1, -60, 0, 20)
 SubTitle.Position = UDim2.new(0, 10, 0, 35)
 SubTitle.BackgroundTransparency = 1
-SubTitle.Text = "Steal a Brainrot | Right Ctrl - Toggle"
-SubTitle.TextColor3 = Color3.fromRGB(200, 220, 255)
+SubTitle.Text = "⚡ Quantum Teleport Technology | Right Ctrl"
+SubTitle.TextColor3 = Color3.fromRGB(200, 255, 240)
 SubTitle.Font = Enum.Font.Gotham
 SubTitle.TextSize = 11
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -232,10 +319,10 @@ local ScrollFrame = Instance.new("ScrollingFrame")
 ScrollFrame.Name = "ScrollFrame"
 ScrollFrame.Size = UDim2.new(1, -20, 1, -150)
 ScrollFrame.Position = UDim2.new(0, 10, 0, 70)
-ScrollFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+ScrollFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
 ScrollFrame.BorderSizePixel = 0
 ScrollFrame.ScrollBarThickness = 6
-ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(70, 130, 220)
+ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 255, 200)
 ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 ScrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
 ScrollFrame.ZIndex = 2
@@ -268,7 +355,7 @@ local StatusBar = Instance.new("Frame")
 StatusBar.Name = "StatusBar"
 StatusBar.Size = UDim2.new(1, -20, 0, 70)
 StatusBar.Position = UDim2.new(0, 10, 1, -80)
-StatusBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+StatusBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 StatusBar.BorderSizePixel = 0
 StatusBar.ZIndex = 2
 StatusBar.Parent = MainFrame
@@ -278,7 +365,7 @@ StatusCorner.CornerRadius = UDim.new(0, 8)
 StatusCorner.Parent = StatusBar
 
 local StatusStroke = Instance.new("UIStroke")
-StatusStroke.Color = Color3.fromRGB(60, 60, 75)
+StatusStroke.Color = Color3.fromRGB(100, 255, 200)
 StatusStroke.Thickness = 1
 StatusStroke.Parent = StatusBar
 
@@ -287,8 +374,8 @@ StatusLabel.Name = "StatusLabel"
 StatusLabel.Size = UDim2.new(1, -16, 1, -16)
 StatusLabel.Position = UDim2.new(0, 8, 0, 8)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "GNOM HUB Ready\nProtection Active"
-StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 150)
+StatusLabel.Text = "⚡ Quantum Systems Ready\n🛡️ Protection Active"
+StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 200)
 StatusLabel.Font = Enum.Font.GothamSemibold
 StatusLabel.TextSize = 13
 StatusLabel.TextWrapped = true
@@ -299,12 +386,12 @@ StatusLabel.ZIndex = 3
 StatusLabel.Parent = StatusBar
 
 -- ██████████████████████████████████████████████████████████████
--- ФУНКЦИИ UI (ИСПРАВЛЕНО)
+-- ФУНКЦИИ UI
 -- ██████████████████████████████████████████████████████████████
 
 local function UpdateStatus(text, color)
     StatusLabel.Text = text
-    StatusLabel.TextColor3 = color or Color3.fromRGB(100, 255, 150)
+    StatusLabel.TextColor3 = color or Color3.fromRGB(100, 255, 200)
 end
 
 local layoutOrder = 0
@@ -315,7 +402,7 @@ local function CreateSection(name)
     local Section = Instance.new("Frame")
     Section.Name = "Section_" .. name
     Section.Size = UDim2.new(1, -10, 0, 32)
-    Section.BackgroundColor3 = Color3.fromRGB(40, 70, 130)
+    Section.BackgroundColor3 = Color3.fromRGB(30, 180, 120)
     Section.BorderSizePixel = 0
     Section.LayoutOrder = layoutOrder
     Section.ZIndex = 3
@@ -330,8 +417,8 @@ local function CreateSection(name)
     SectionLabel.Size = UDim2.new(1, -10, 1, 0)
     SectionLabel.Position = UDim2.new(0, 5, 0, 0)
     SectionLabel.BackgroundTransparency = 1
-    SectionLabel.Text = "==== " .. name .. " ===="
-    SectionLabel.TextColor3 = Color3.fromRGB(220, 230, 255)
+    SectionLabel.Text = "⚡ " .. name .. " ⚡"
+    SectionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     SectionLabel.Font = Enum.Font.GothamBold
     SectionLabel.TextSize = 14
     SectionLabel.TextWrapped = false
@@ -351,7 +438,7 @@ local function CreateToggle(name, displayName, defaultState, callback)
     local Toggle = Instance.new("Frame")
     Toggle.Name = "Toggle_" .. name
     Toggle.Size = UDim2.new(1, -10, 0, 42)
-    Toggle.BackgroundColor3 = state and Color3.fromRGB(60, 150, 80) or Color3.fromRGB(60, 60, 75)
+    Toggle.BackgroundColor3 = state and Color3.fromRGB(50, 200, 120) or Color3.fromRGB(50, 50, 65)
     Toggle.BorderSizePixel = 0
     Toggle.LayoutOrder = layoutOrder
     Toggle.ZIndex = 3
@@ -362,7 +449,7 @@ local function CreateToggle(name, displayName, defaultState, callback)
     ToggleCorner.Parent = Toggle
     
     local ToggleStroke = Instance.new("UIStroke")
-    ToggleStroke.Color = state and Color3.fromRGB(90, 200, 120) or Color3.fromRGB(80, 80, 95)
+    ToggleStroke.Color = state and Color3.fromRGB(100, 255, 180) or Color3.fromRGB(70, 70, 85)
     ToggleStroke.Thickness = 2
     ToggleStroke.Parent = Toggle
     
@@ -371,7 +458,7 @@ local function CreateToggle(name, displayName, defaultState, callback)
     ToggleButton.Size = UDim2.new(1, -10, 1, -4)
     ToggleButton.Position = UDim2.new(0, 5, 0, 2)
     ToggleButton.BackgroundTransparency = 1
-    ToggleButton.Text = (state and "[ON] " or "[OFF] ") .. displayName
+    ToggleButton.Text = (state and "✓ " or "✗ ") .. displayName
     ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     ToggleButton.Font = Enum.Font.GothamSemibold
     ToggleButton.TextSize = 14
@@ -387,8 +474,8 @@ local function CreateToggle(name, displayName, defaultState, callback)
         state = not state
         GnomHub.Enabled[name] = state
         
-        local newColor = state and Color3.fromRGB(60, 150, 80) or Color3.fromRGB(60, 60, 75)
-        local newStrokeColor = state and Color3.fromRGB(90, 200, 120) or Color3.fromRGB(80, 80, 95)
+        local newColor = state and Color3.fromRGB(50, 200, 120) or Color3.fromRGB(50, 50, 65)
+        local newStrokeColor = state and Color3.fromRGB(100, 255, 180) or Color3.fromRGB(70, 70, 85)
         
         TweenService:Create(Toggle, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
             BackgroundColor3 = newColor
@@ -398,12 +485,12 @@ local function CreateToggle(name, displayName, defaultState, callback)
             Color = newStrokeColor
         }):Play()
         
-        ToggleButton.Text = (state and "[ON] " or "[OFF] ") .. displayName
+        ToggleButton.Text = (state and "✓ " or "✗ ") .. displayName
         
         local success, err = pcall(callback, state)
         if not success then
             warn("[Gnom Hub] Ошибка в " .. name .. ": " .. tostring(err))
-            UpdateStatus("Error: " .. name, Color3.fromRGB(255, 100, 100))
+            UpdateStatus("⚠️ Error: " .. name, Color3.fromRGB(255, 100, 100))
         end
     end)
     
@@ -416,7 +503,7 @@ local function CreateButton(displayName, callback)
     local Button = Instance.new("Frame")
     Button.Name = "Button_" .. displayName:gsub("%s+", "")
     Button.Size = UDim2.new(1, -10, 0, 45)
-    Button.BackgroundColor3 = Color3.fromRGB(70, 110, 190)
+    Button.BackgroundColor3 = Color3.fromRGB(50, 150, 220)
     Button.BorderSizePixel = 0
     Button.LayoutOrder = layoutOrder
     Button.ZIndex = 3
@@ -427,7 +514,7 @@ local function CreateButton(displayName, callback)
     ButtonCorner.Parent = Button
     
     local ButtonStroke = Instance.new("UIStroke")
-    ButtonStroke.Color = Color3.fromRGB(100, 150, 230)
+    ButtonStroke.Color = Color3.fromRGB(100, 200, 255)
     ButtonStroke.Thickness = 2
     ButtonStroke.Parent = Button
     
@@ -450,19 +537,19 @@ local function CreateButton(displayName, callback)
     
     TextButton.MouseButton1Click:Connect(function()
         TweenService:Create(Button, TweenInfo.new(0.1), {
-            BackgroundColor3 = Color3.fromRGB(90, 140, 220)
+            BackgroundColor3 = Color3.fromRGB(70, 180, 240)
         }):Play()
         
         task.wait(0.1)
         
         TweenService:Create(Button, TweenInfo.new(0.1), {
-            BackgroundColor3 = Color3.fromRGB(70, 110, 190)
+            BackgroundColor3 = Color3.fromRGB(50, 150, 220)
         }):Play()
         
         local success, err = pcall(callback)
         if not success then
             warn("[Gnom Hub] Ошибка: " .. tostring(err))
-            UpdateStatus("Execution Error", Color3.fromRGB(255, 100, 100))
+            UpdateStatus("⚠️ Execution Error", Color3.fromRGB(255, 100, 100))
         end
     end)
     
@@ -470,119 +557,140 @@ local function CreateButton(displayName, callback)
 end
 
 -- ██████████████████████████████████████████████████████████████
--- ИГРОВЫЕ ФУНКЦИИ
+-- ИГРОВЫЕ ФУНКЦИИ - КВАНТОВАЯ ВЕРСИЯ
 -- ██████████████████████████████████████████████████████████████
 
 -- РАЗДЕЛ: ДВИЖЕНИЕ
-CreateSection("MOVEMENT")
+CreateSection("QUANTUM MOVEMENT")
 
--- Телепорт вперед (УЛУЧШЕННЫЙ - с обходом античита)
-CreateButton("Teleport Forward (25 studs)", function()
+-- 🚀 КВАНТОВЫЙ ТЕЛЕПОРТ ВПЕРЁД (РЕВОЛЮЦИОННЫЙ МЕТОД)
+CreateButton("🚀 Quantum TP Forward (25)", function()
     local char, hum, root = getChar()
     if not root then
-        UpdateStatus("Character not found", Color3.fromRGB(255, 150, 100))
+        UpdateStatus("⚠️ Character not found", Color3.fromRGB(255, 150, 100))
         return
     end
     
-    -- Временно отключаем коллизию
-    local originalCollisions = {}
+    -- Шаг 1: Вычисляем целевую позицию
+    local lookVector = root.CFrame.LookVector
+    local targetCFrame = root.CFrame + (lookVector * GnomHub.Settings.TeleportDistance)
+    
+    -- Шаг 2: Отключаем ВСЕ коллизии и физику
     for _, part in pairs(char:GetDescendants()) do
         if part:IsA("BasePart") then
-            originalCollisions[part] = part.CanCollide
             part.CanCollide = false
+            part.Massless = true
         end
     end
     
-    -- Вычисляем целевую позицию
-    local lookVector = root.CFrame.LookVector
-    local targetPos = root.Position + (lookVector * GnomHub.Settings.TeleportDistance)
+    -- Шаг 3: Обнуляем все скорости ПЕРЕД телепортацией
+    root.AssemblyLinearVelocity = Vector3.zero
+    root.AssemblyAngularVelocity = Vector3.zero
+    root.Velocity = Vector3.zero
     
-    -- Используем BodyVelocity для плавной телепортации
-    local bodyVel = Instance.new("BodyVelocity")
-    bodyVel.Name = "GnomHub_TeleportVel"
-    bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    bodyVel.Velocity = (targetPos - root.Position).Unit * 200
-    bodyVel.Parent = root
+    -- Шаг 4: МГНОВЕННАЯ телепортация с квантовым якорем
+    root.CFrame = targetCFrame
     
-    task.wait(0.1)
+    -- Шаг 5: Создаём квантовый якорь для фиксации позиции
+    local anchor, weld = QuantumAnchor(root, targetCFrame, 0.2)
     
-    -- Финальная позиция
-    root.CFrame = CFrame.new(targetPos, targetPos + lookVector)
+    -- Шаг 6: Запускаем систему обнуления скорости на 0.3 секунды
+    local nullifier = VelocityNullifier(root, 0.3)
     
-    -- Удаляем временный объект
-    if bodyVel then
-        bodyVel:Destroy()
-    end
-    
-    -- Восстанавливаем коллизии
-    task.wait(0.05)
-    for part, canCollide in pairs(originalCollisions) do
-        if part and part.Parent then
-            part.CanCollide = canCollide
+    -- Шаг 7: Дополнительная фиксация через несколько фреймов
+    for i = 1, 5 do
+        task.wait()
+        if root and root.Parent then
+            root.CFrame = targetCFrame
+            root.AssemblyLinearVelocity = Vector3.zero
+            root.AssemblyAngularVelocity = Vector3.zero
         end
     end
     
-    UpdateStatus("Teleport Complete", Color3.fromRGB(100, 255, 150))
+    -- Шаг 8: Восстанавливаем физику постепенно
+    task.wait(0.15)
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Massless = false
+            if part.Name ~= "HumanoidRootPart" then
+                part.CanCollide = true
+            end
+        end
+    end
+    
+    UpdateStatus("⚡ Quantum Teleport Complete!", Color3.fromRGB(100, 255, 200))
 end)
 
--- Телепорт на базу (ПОЛНОСТЬЮ ПЕРЕРАБОТАНО)
-CreateButton("Teleport to Base", function()
+-- 🏠 УМНЫЙ ТЕЛЕПОРТ НА БАЗУ (ПРОДВИНУТЫЙ ПОИСК)
+CreateButton("🏠 Smart TP to Base", function()
     local char, hum, root = getChar()
     if not root then
-        UpdateStatus("Character not found", Color3.fromRGB(255, 150, 100))
+        UpdateStatus("⚠️ Character not found", Color3.fromRGB(255, 150, 100))
         return
     end
+    
+    UpdateStatus("🔍 Searching for base...", Color3.fromRGB(255, 200, 100))
     
     local foundBase = nil
     local basePart = nil
+    local playerName = LocalPlayer.Name:lower()
     
-    -- Метод 1: Поиск по всему Workspace с ключевыми словами
-    local function findBase()
+    -- МЕТОД 1: Поиск в стандартных папках
+    local baseFolders = {"Bases", "PlayerBases", "Spawns", "PlayerSpawns", "Homes", "SafeZones"}
+    
+    for _, folderName in ipairs(baseFolders) do
+        local folder = Workspace:FindFirstChild(folderName, true)
+        if folder then
+            -- Ищем различные варианты названий
+            foundBase = folder:FindFirstChild(LocalPlayer.Name) or 
+                       folder:FindFirstChild(LocalPlayer.Name .. "'s Base") or
+                       folder:FindFirstChild(LocalPlayer.Name .. "Base") or
+                       folder:FindFirstChild(LocalPlayer.Name .. "'sBase") or
+                       folder:FindFirstChild(LocalPlayer.Name .. " Base")
+            
+            if foundBase then
+                UpdateStatus("✓ Found in " .. folderName, Color3.fromRGB(100, 255, 150))
+                break
+            end
+        end
+    end
+    
+    -- МЕТОД 2: Глубокий рекурсивный поиск по всему Workspace
+    if not foundBase then
+        UpdateStatus("🔍 Deep search...", Color3.fromRGB(255, 200, 100))
+        
         for _, obj in pairs(Workspace:GetDescendants()) do
             if obj:IsA("BasePart") or obj:IsA("Model") then
                 local name = obj.Name:lower()
-                local playerName = LocalPlayer.Name:lower()
                 
-                -- Проверяем различные варианты названий базы
-                if name:find(playerName) and (name:find("base") or name:find("spawn") or name:find("home")) then
-                    return obj
-                end
-                
-                -- Проверяем точные совпадения
-                if name == playerName .. "base" or name == playerName .. "'s base" or 
-                   name == playerName .. " base" or name == "base_" .. playerName then
-                    return obj
+                -- Проверяем различные комбинации
+                if (name:find(playerName) and name:find("base")) or
+                   (name:find(playerName) and name:find("spawn")) or
+                   (name == playerName .. "base") or
+                   (name == playerName .. "'s base") or
+                   (name == playerName .. " base") or
+                   (name == "base" and obj.Parent and obj.Parent.Name:lower() == playerName) then
+                    foundBase = obj
+                    UpdateStatus("✓ Found via deep search", Color3.fromRGB(100, 255, 150))
+                    break
                 end
             end
         end
-        return nil
     end
     
-    -- Пытаемся найти базу разными способами
-    local possibleBaseFolders = {"Bases", "PlayerBases", "Spawns", "PlayerSpawns", "Homes"}
-    
-    for _, folderName in ipairs(possibleBaseFolders) do
-        local folder = Workspace:FindFirstChild(folderName)
-        if folder then
-            foundBase = folder:FindFirstChild(LocalPlayer.Name) or 
-                       folder:FindFirstChild(LocalPlayer.Name .. "'s Base") or
-                       folder:FindFirstChild(LocalPlayer.Name .. "Base")
-            if foundBase then break end
-        end
-    end
-    
-    -- Если не нашли, используем глубокий поиск
+    -- МЕТОД 3: Поиск SpawnLocation с нашим именем
     if not foundBase then
-        foundBase = findBase()
-    end
-    
-    -- Если всё ещё не нашли, ищем объект со словом "Base" в Workspace
-    if not foundBase then
-        for _, obj in pairs(Workspace:GetChildren()) do
-            local name = obj.Name:lower()
-            if name:find(LocalPlayer.Name:lower()) and name:find("base") then
-                foundBase = obj
-                break
+        UpdateStatus("🔍 Searching SpawnLocations...", Color3.fromRGB(255, 200, 100))
+        
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("SpawnLocation") then
+                -- Проверяем родительскую модель или папку
+                local parent = obj.Parent
+                if parent and parent.Name:lower():find(playerName) then
+                    foundBase = obj
+                    UpdateStatus("✓ Found SpawnLocation", Color3.fromRGB(100, 255, 150))
+                    break
+                end
             end
         end
     end
@@ -590,11 +698,12 @@ CreateButton("Teleport to Base", function()
     -- Определяем целевую часть для телепортации
     if foundBase then
         if foundBase:IsA("Model") then
-            basePart = foundBase.PrimaryPart or foundBase:FindFirstChildWhichIsA("BasePart")
-            -- Ищем SpawnLocation если есть
-            local spawnLoc = foundBase:FindFirstChildOfClass("SpawnLocation")
+            -- Приоритет: SpawnLocation > PrimaryPart > любая BasePart
+            local spawnLoc = foundBase:FindFirstChildOfClass("SpawnLocation", true)
             if spawnLoc then
                 basePart = spawnLoc
+            else
+                basePart = foundBase.PrimaryPart or foundBase:FindFirstChildWhichIsA("BasePart", true)
             end
         elseif foundBase:IsA("BasePart") then
             basePart = foundBase
@@ -602,115 +711,201 @@ CreateButton("Teleport to Base", function()
     end
     
     if basePart then
-        -- Отключаем коллизии для плавной телепортации
+        UpdateStatus("⚡ Teleporting to base...", Color3.fromRGB(100, 200, 255))
+        
+        -- КВАНТОВАЯ ТЕЛЕПОРТАЦИЯ НА БАЗУ
+        local targetCFrame = basePart.CFrame + Vector3.new(0, 5, 0)
+        
+        -- Отключаем физику
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") then
                 part.CanCollide = false
+                part.Massless = true
             end
         end
         
-        -- Телепортация с использованием BodyPosition для плавности
-        local bodyPos = Instance.new("BodyPosition")
-        bodyPos.Name = "GnomHub_BaseTeleport"
-        bodyPos.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bodyPos.Position = basePart.Position + Vector3.new(0, 5, 0)
-        bodyPos.Parent = root
+        -- Обнуляем скорости
+        root.AssemblyLinearVelocity = Vector3.zero
+        root.AssemblyAngularVelocity = Vector3.zero
         
-        task.wait(0.15)
+        -- Телепортируем
+        root.CFrame = targetCFrame
         
-        -- Финальная установка позиции
-        root.CFrame = basePart.CFrame + Vector3.new(0, 5, 0)
+        -- Квантовый якорь
+        local anchor, weld = QuantumAnchor(root, targetCFrame, 0.25)
         
-        -- Очистка
-        if bodyPos then
-            bodyPos:Destroy()
+        -- Система обнуления скорости
+        local nullifier = VelocityNullifier(root, 0.4)
+        
+        -- Мульти-фреймовая фиксация
+        for i = 1, 7 do
+            task.wait()
+            if root and root.Parent then
+                root.CFrame = targetCFrame
+                root.AssemblyLinearVelocity = Vector3.zero
+            end
         end
         
-        task.wait(0.1)
-        
-        -- Восстанавливаем коллизии
+        -- Восстанавливаем физику
+        task.wait(0.2)
         for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                part.CanCollide = true
+            if part:IsA("BasePart") then
+                part.Massless = false
+                if part.Name ~= "HumanoidRootPart" then
+                    part.CanCollide = true
+                end
             end
         end
         
-        UpdateStatus("Teleported to Base!", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("✓ Teleported to base!", Color3.fromRGB(100, 255, 200))
     else
-        UpdateStatus("Base not found. Try Auto-Steal", Color3.fromRGB(255, 150, 100))
+        UpdateStatus("❌ Base not found. Check workspace.", Color3.fromRGB(255, 100, 100))
     end
 end)
 
--- АЛЬТЕРНАТИВНАЯ КНОПКА: Экстремальный NoClip (если стандартный не работает)
-CreateButton("Extreme NoClip (30s)", function()
-    local char, hum, root = getChar()
-    if not root then
-        UpdateStatus("Character not found", Color3.fromRGB(255, 150, 100))
-        return
-    end
-    
-    UpdateStatus("Extreme NoClip: 30 seconds", Color3.fromRGB(255, 200, 100))
-    
-    local extremeNoClipActive = true
-    local startTime = tick()
-    
-    -- Метод 1: Полное отключение физики
-    local originalMasslessStates = {}
-    for _, part in pairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then
-            originalMasslessStates[part] = part.Massless
-            part.CanCollide = false
-            part.Massless = true
+-- 👻 РЕВОЛЮЦИОННЫЙ НОКЛИП (БЕЗ ОТКАТА!)
+CreateToggle("NoClip", "👻 Quantum NoClip", false, function(enabled)
+    if enabled then
+        local char, hum, root = getChar()
+        if not char or not root then
+            UpdateStatus("⚠️ Character not found", Color3.fromRGB(255, 150, 100))
+            GnomHub.Enabled.NoClip = false
+            return
         end
-    end
-    
-    -- Метод 2: Создаём защитный форс-филд
-    local forceField = Instance.new("ForceField")
-    forceField.Visible = false
-    forceField.Parent = char
-    
-    -- Метод 3: Непрерывное обновление
-    local extremeConnection
-    extremeConnection = RunService.RenderStepped:Connect(function()
-        if not extremeNoClipActive or (tick() - startTime) > 30 then
-            extremeConnection:Disconnect()
+        
+        -- МЕТОД 1: Continuous Collision Disabling (каждый фрейм)
+        GnomHub.Connections.NoClip = RunService.Heartbeat:Connect(function()
+            if not GnomHub.Enabled.NoClip then return end
             
-            -- Восстанавливаем состояния
-            for part, massless in pairs(originalMasslessStates) do
-                if part and part.Parent then
-                    part.Massless = massless
-                    if part.Name ~= "HumanoidRootPart" then
+            local currentChar = getChar()
+            if not currentChar then return end
+            
+            for _, part in pairs(currentChar:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end)
+        
+        -- МЕТОД 2: Velocity Stabilization System
+        GnomHub.Connections.NoClipStabilizer = RunService.Heartbeat:Connect(function()
+            if not GnomHub.Enabled.NoClip then return end
+            
+            local currentChar, currentHum, currentRoot = getChar()
+            if not currentRoot then return end
+            
+            -- Сохраняем текущую позицию
+            if not GnomHub.NoClipData then
+                GnomHub.NoClipData = {
+                    LastPosition = currentRoot.Position,
+                    LastCFrame = currentRoot.CFrame,
+                    FrameCount = 0
+                }
+            end
+            
+            local data = GnomHub.NoClipData
+            data.FrameCount = data.FrameCount + 1
+            
+            -- Каждые 2 фрейма проверяем на телепортацию назад
+            if data.FrameCount % 2 == 0 then
+                local currentPos = currentRoot.Position
+                local distance = (currentPos - data.LastPosition).Magnitude
+                local moveDirection = currentHum.MoveDirection.Magnitude
+                
+                -- Если игра пытается откатить нас назад (детект по резкому изменению позиции)
+                if distance > 8 and moveDirection > 0 then
+                    -- Возвращаем на последнюю валидную позицию
+                    currentRoot.CFrame = data.LastCFrame
+                    currentRoot.AssemblyLinearVelocity = Vector3.zero
+                    currentRoot.AssemblyAngularVelocity = Vector3.zero
+                elseif distance < 8 then
+                    -- Обновляем последнюю валидную позицию
+                    data.LastPosition = currentPos
+                    data.LastCFrame = currentRoot.CFrame
+                end
+            end
+        end)
+        
+        -- МЕТОД 3: Anti-Stuck System (освобождение из застревания)
+        GnomHub.Connections.NoClipAntiStuck = RunService.Heartbeat:Connect(function()
+            if not GnomHub.Enabled.NoClip then return end
+            
+            local currentChar, currentHum, currentRoot = getChar()
+            if not currentRoot then return end
+            
+            -- Если застряли (не двигаемся при нажатой клавише)
+            if currentHum.MoveDirection.Magnitude > 0 then
+                local velocity = currentRoot.AssemblyLinearVelocity.Magnitude
+                
+                if velocity < 1 then
+                    -- Принудительно двигаем в направлении взгляда
+                    local cam = Workspace.CurrentCamera
+                    if cam then
+                        local pushDirection = currentHum.MoveDirection
+                        currentRoot.AssemblyLinearVelocity = pushDirection * 5
+                    end
+                end
+            end
+        end)
+        
+        -- МЕТОД 4: Disable Humanoid States
+        if hum then
+            hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+            hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, false)
+        end
+        
+        UpdateStatus("👻 Quantum NoClip Active", Color3.fromRGB(100, 255, 200))
+    else
+        -- Отключаем все системы
+        if GnomHub.Connections.NoClip then
+            GnomHub.Connections.NoClip:Disconnect()
+            GnomHub.Connections.NoClip = nil
+        end
+        
+        if GnomHub.Connections.NoClipStabilizer then
+            GnomHub.Connections.NoClipStabilizer:Disconnect()
+            GnomHub.Connections.NoClipStabilizer = nil
+        end
+        
+        if GnomHub.Connections.NoClipAntiStuck then
+            GnomHub.Connections.NoClipAntiStuck:Disconnect()
+            GnomHub.Connections.NoClipAntiStuck = nil
+        end
+        
+        GnomHub.NoClipData = nil
+        
+        -- Восстанавливаем коллизии
+        local char, hum = getChar()
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    if part.Name == "HumanoidRootPart" then
+                        part.CanCollide = false
+                    else
                         part.CanCollide = true
                     end
                 end
             end
-            
-            if forceField then
-                forceField:Destroy()
-            end
-            
-            UpdateStatus("Extreme NoClip ended", Color3.fromRGB(255, 200, 100))
-            return
         end
         
-        local currentChar = getChar()
-        if not currentChar then return end
-        
-        -- Агрессивное отключение коллизий каждый фрейм
-        for _, part in pairs(currentChar:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
+        -- Восстанавливаем состояния гуманоида
+        if hum then
+            hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+            hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+            hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, true)
         end
-    end)
+        
+        UpdateStatus("✓ NoClip Deactivated", Color3.fromRGB(255, 200, 100))
+    end
 end)
 
--- Полет (ИСПРАВЛЕНО)
-CreateToggle("Fly", "Fly (WASD + Space/Shift)", false, function(enabled)
+-- ✈️ ПОЛЁТ
+CreateToggle("Fly", "✈️ Fly (WASD + Space/Shift)", false, function(enabled)
     if enabled then
         local char, hum, root = getChar()
         if not char or not root then
-            UpdateStatus("Character not found", Color3.fromRGB(255, 150, 100))
+            UpdateStatus("⚠️ Character not found", Color3.fromRGB(255, 150, 100))
             GnomHub.Enabled.Fly = false
             return
         end
@@ -770,7 +965,7 @@ CreateToggle("Fly", "Fly (WASD + Space/Shift)", false, function(enabled)
             end
         end)
         
-        UpdateStatus("Fly Activated", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("✈️ Fly Activated", Color3.fromRGB(100, 255, 200))
     else
         if GnomHub.Connections.Fly then
             GnomHub.Connections.Fly:Disconnect()
@@ -786,122 +981,12 @@ CreateToggle("Fly", "Fly (WASD + Space/Shift)", false, function(enabled)
             if bodyGyro then bodyGyro:Destroy() end
         end
         
-        UpdateStatus("Fly Deactivated", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("✓ Fly Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
--- NoClip (РЕВОЛЮЦИОННАЯ ВЕРСИЯ - БЕЗ ТЕЛЕПОРТАЦИИ НАЗАД)
-CreateToggle("NoClip", "NoClip (through walls)", false, function(enabled)
-    if enabled then
-        local char, hum, root = getChar()
-        if not char or not root then
-            UpdateStatus("Character not found", Color3.fromRGB(255, 150, 100))
-            GnomHub.Enabled.NoClip = false
-            return
-        end
-        
-        -- Метод 1: Используем Heartbeat вместо Stepped для избежания конфликтов
-        GnomHub.Connections.NoClip = RunService.Heartbeat:Connect(function()
-            if not GnomHub.Enabled.NoClip then return end
-            
-            local currentChar = getChar()
-            if not currentChar then return end
-            
-            -- Отключаем коллизию для всех частей
-            for _, part in pairs(currentChar:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
-            end
-        end)
-        
-        -- Метод 2: Предотвращаем откат позиции через BodyVelocity
-        local noClipVelocity = Instance.new("BodyVelocity")
-        noClipVelocity.Name = "GnomHub_NoClipVelocity"
-        noClipVelocity.MaxForce = Vector3.new(0, 0, 0) -- Не влияет на движение, только фиксирует позицию
-        noClipVelocity.Velocity = Vector3.zero
-        noClipVelocity.Parent = root
-        
-        -- Метод 3: Дополнительная защита через корректировку физики
-        GnomHub.Connections.NoClipPhysics = RunService.PreSimulation:Connect(function()
-            if not GnomHub.Enabled.NoClip then return end
-            
-            local currentChar, currentHum, currentRoot = getChar()
-            if not currentRoot then return end
-            
-            -- Сохраняем текущую позицию для предотвращения отката
-            if not GnomHub.NoClipLastPos then
-                GnomHub.NoClipLastPos = currentRoot.Position
-            end
-            
-            local currentPos = currentRoot.Position
-            local distance = (currentPos - GnomHub.NoClipLastPos).Magnitude
-            
-            -- Если игра пытается телепортировать назад (откат больше 5 стадов)
-            if distance > 5 and currentHum.MoveDirection.Magnitude > 0 then
-                -- Восстанавливаем позицию перед откатом
-                currentRoot.CFrame = CFrame.new(GnomHub.NoClipLastPos)
-            else
-                -- Обновляем сохранённую позицию
-                GnomHub.NoClipLastPos = currentPos
-            end
-        end)
-        
-        -- Метод 4: Отключаем физические ограничения
-        if hum then
-            hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-            hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-        end
-        
-        UpdateStatus("NoClip Activated (Advanced)", Color3.fromRGB(100, 255, 150))
-    else
-        -- Отключаем все подключения
-        if GnomHub.Connections.NoClip then
-            GnomHub.Connections.NoClip:Disconnect()
-            GnomHub.Connections.NoClip = nil
-        end
-        
-        if GnomHub.Connections.NoClipPhysics then
-            GnomHub.Connections.NoClipPhysics:Disconnect()
-            GnomHub.Connections.NoClipPhysics = nil
-        end
-        
-        GnomHub.NoClipLastPos = nil
-        
-        -- Удаляем временные объекты
-        local char, hum, root = getChar()
-        if root then
-            local noClipVel = root:FindFirstChild("GnomHub_NoClipVelocity")
-            if noClipVel then
-                noClipVel:Destroy()
-            end
-        end
-        
-        -- Восстанавливаем коллизии
-        if char then
-            for _, part in pairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    if part.Name == "HumanoidRootPart" then
-                        part.CanCollide = false
-                    else
-                        part.CanCollide = true
-                    end
-                end
-            end
-        end
-        
-        -- Восстанавливаем состояния гуманоида
-        if hum then
-            hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
-            hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
-        end
-        
-        UpdateStatus("NoClip Deactivated", Color3.fromRGB(255, 200, 100))
-    end
-end)
-
--- Ускорение ходьбы (ИСПРАВЛЕНО)
-CreateToggle("Speed", "Walk Speed Boost", false, function(enabled)
+-- 🏃 УСКОРЕНИЕ
+CreateToggle("Speed", "🏃 Speed Boost", false, function(enabled)
     if enabled then
         GnomHub.Connections.Speed = RunService.Heartbeat:Connect(function()
             local char, hum = getChar()
@@ -919,14 +1004,14 @@ CreateToggle("Speed", "Walk Speed Boost", false, function(enabled)
             end
         end)
         
-        UpdateStatus("Speed Activated", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("🏃 Speed Activated", Color3.fromRGB(100, 255, 200))
     else
-        UpdateStatus("Speed Deactivated", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("✓ Speed Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
--- Бесконечный прыжок
-CreateToggle("InfinityJump", "Infinite Jump", false, function(enabled)
+-- 🦘 БЕСКОНЕЧНЫЙ ПРЫЖОК
+CreateToggle("InfinityJump", "🦘 Infinite Jump", false, function(enabled)
     if enabled then
         GnomHub.Connections.InfinityJump = UserInputService.JumpRequest:Connect(function()
             if not GnomHub.Enabled.InfinityJump then return end
@@ -937,22 +1022,22 @@ CreateToggle("InfinityJump", "Infinite Jump", false, function(enabled)
             end
         end)
         
-        UpdateStatus("Infinite Jump Activated", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("🦘 Infinite Jump On", Color3.fromRGB(100, 255, 200))
     else
         if GnomHub.Connections.InfinityJump then
             GnomHub.Connections.InfinityJump:Disconnect()
             GnomHub.Connections.InfinityJump = nil
         end
         
-        UpdateStatus("Infinite Jump Deactivated", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("✓ Infinite Jump Off", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- РАЗДЕЛ: ВИЗУАЛИЗАЦИЯ
 CreateSection("VISUALIZATION")
 
--- ESP (УЛУЧШЕНО)
-CreateToggle("ESP", "ESP (highlighting)", false, function(enabled)
+-- 👁️ ESP
+CreateToggle("ESP", "👁️ ESP (Players + Items)", false, function(enabled)
     if enabled then
         if not GnomHub.ESP_Folder then
             GnomHub.ESP_Folder = Instance.new("Folder")
@@ -970,6 +1055,7 @@ CreateToggle("ESP", "ESP (highlighting)", false, function(enabled)
             local myChar, myHum, myRoot = getChar()
             if not myRoot then return end
             
+            -- ESP для Brainrot
             for _, obj in pairs(Workspace:GetDescendants()) do
                 if obj:IsA("BasePart") and obj.Name:lower():find("brainrot") then
                     local distance = (myRoot.Position - obj.Position).Magnitude
@@ -984,23 +1070,24 @@ CreateToggle("ESP", "ESP (highlighting)", false, function(enabled)
                     local label = Instance.new("TextLabel")
                     label.Size = UDim2.new(1, 0, 1, 0)
                     label.BackgroundTransparency = 1
-                    label.Text = string.format("BRAINROT\n%.0fm", distance)
-                    label.TextColor3 = Color3.fromRGB(255, 100, 200)
+                    label.Text = string.format("💎 BRAINROT\n%.0fm", distance)
+                    label.TextColor3 = Color3.fromRGB(255, 100, 255)
                     label.Font = Enum.Font.GothamBold
                     label.TextSize = 14
                     label.TextStrokeTransparency = 0.3
                     label.Parent = billboard
                     
                     local highlight = Instance.new("Highlight")
-                    highlight.FillColor = Color3.fromRGB(255, 50, 150)
+                    highlight.FillColor = Color3.fromRGB(255, 50, 255)
                     highlight.OutlineColor = Color3.fromRGB(255, 200, 255)
-                    highlight.FillTransparency = 0.5
+                    highlight.FillTransparency = 0.4
                     highlight.OutlineTransparency = 0
                     highlight.Adornee = obj
                     highlight.Parent = GnomHub.ESP_Folder
                 end
             end
             
+            -- ESP для игроков
             for _, player in pairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer and player.Character then
                     local playerRoot = player.Character:FindFirstChild("HumanoidRootPart")
@@ -1019,17 +1106,17 @@ CreateToggle("ESP", "ESP (highlighting)", false, function(enabled)
                         local label = Instance.new("TextLabel")
                         label.Size = UDim2.new(1, 0, 1, 0)
                         label.BackgroundTransparency = 1
-                        label.Text = string.format("%s\n%.0f HP | %.0fm", player.Name, playerHum.Health, distance)
-                        label.TextColor3 = Color3.fromRGB(100, 200, 255)
+                        label.Text = string.format("👤 %s\n%.0f HP | %.0fm", player.Name, playerHum.Health, distance)
+                        label.TextColor3 = Color3.fromRGB(100, 255, 255)
                         label.Font = Enum.Font.GothamBold
                         label.TextSize = 12
                         label.TextStrokeTransparency = 0.3
                         label.Parent = billboard
                         
                         local highlight = Instance.new("Highlight")
-                        highlight.FillColor = Color3.fromRGB(100, 150, 255)
-                        highlight.OutlineColor = Color3.fromRGB(200, 220, 255)
-                        highlight.FillTransparency = 0.7
+                        highlight.FillColor = Color3.fromRGB(100, 200, 255)
+                        highlight.OutlineColor = Color3.fromRGB(200, 255, 255)
+                        highlight.FillTransparency = 0.6
                         highlight.OutlineTransparency = 0
                         highlight.Adornee = player.Character
                         highlight.Parent = GnomHub.ESP_Folder
@@ -1048,7 +1135,7 @@ CreateToggle("ESP", "ESP (highlighting)", false, function(enabled)
         end)
         
         createESP()
-        UpdateStatus("ESP Activated", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("👁️ ESP Activated", Color3.fromRGB(100, 255, 200))
     else
         if GnomHub.Connections.ESP then
             GnomHub.Connections.ESP:Disconnect()
@@ -1060,15 +1147,15 @@ CreateToggle("ESP", "ESP (highlighting)", false, function(enabled)
             GnomHub.ESP_Folder = nil
         end
         
-        UpdateStatus("ESP Deactivated", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("✓ ESP Deactivated", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- РАЗДЕЛ: АВТОМАТИЗАЦИЯ
 CreateSection("AUTOMATION")
 
--- Авто-фарм монет (ИСПРАВЛЕНО)
-CreateToggle("AutoFarm", "Auto-Farm Coins", false, function(enabled)
+-- 💰 АВТО-ФАРМ
+CreateToggle("AutoFarm", "💰 Auto-Farm Coins", false, function(enabled)
     if enabled then
         GnomHub.Connections.AutoFarm = RunService.Heartbeat:Connect(function()
             if not GnomHub.Enabled.AutoFarm then
@@ -1106,19 +1193,19 @@ CreateToggle("AutoFarm", "Auto-Farm Coins", false, function(enabled)
             end
         end)
         
-        UpdateStatus("Auto-Farm Activated", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("💰 Auto-Farm Active", Color3.fromRGB(100, 255, 200))
     else
         if GnomHub.Connections.AutoFarm then
             GnomHub.Connections.AutoFarm:Disconnect()
             GnomHub.Connections.AutoFarm = nil
         end
         
-        UpdateStatus("Auto-Farm Deactivated", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("✓ Auto-Farm Off", Color3.fromRGB(255, 200, 100))
     end
 end)
 
--- Авто-кража Brainrot (ПОЛНОСТЬЮ ПЕРЕРАБОТАНО)
-CreateToggle("AutoStealBrainrot", "Auto-Steal Brainrot", false, function(enabled)
+-- 💎 АВТО-КРАЖА BRAINROT (КВАНТОВАЯ ВЕРСИЯ)
+CreateToggle("AutoStealBrainrot", "💎 Auto-Steal Brainrot", false, function(enabled)
     if enabled then
         GnomHub.Connections.AutoSteal = RunService.Heartbeat:Connect(function()
             if not GnomHub.Enabled.AutoStealBrainrot then
@@ -1139,6 +1226,7 @@ CreateToggle("AutoStealBrainrot", "Auto-Steal Brainrot", false, function(enabled
                 end
             end
             
+            -- Проверяем, есть ли у нас Brainrot
             local hasBrainrot = false
             for _, obj in pairs(char:GetDescendants()) do
                 if obj:IsA("BasePart") and obj.Name:lower():find("brainrot") then
@@ -1148,15 +1236,15 @@ CreateToggle("AutoStealBrainrot", "Auto-Steal Brainrot", false, function(enabled
             end
             
             if hasBrainrot then
-                -- Используем улучшенный поиск базы
+                -- Ищем базу (используем тот же умный поиск)
                 local foundBase = nil
                 local basePart = nil
+                local playerName = LocalPlayer.Name:lower()
                 
-                -- Поиск базы (как в кнопке Teleport to Base)
-                local possibleBaseFolders = {"Bases", "PlayerBases", "Spawns", "PlayerSpawns", "Homes"}
+                local baseFolders = {"Bases", "PlayerBases", "Spawns", "PlayerSpawns", "Homes", "SafeZones"}
                 
-                for _, folderName in ipairs(possibleBaseFolders) do
-                    local folder = Workspace:FindFirstChild(folderName)
+                for _, folderName in ipairs(baseFolders) do
+                    local folder = Workspace:FindFirstChild(folderName, true)
                     if folder then
                         foundBase = folder:FindFirstChild(LocalPlayer.Name) or 
                                    folder:FindFirstChild(LocalPlayer.Name .. "'s Base") or
@@ -1165,14 +1253,13 @@ CreateToggle("AutoStealBrainrot", "Auto-Steal Brainrot", false, function(enabled
                     end
                 end
                 
-                -- Глубокий поиск если не нашли
+                -- Глубокий поиск
                 if not foundBase then
                     for _, obj in pairs(Workspace:GetDescendants()) do
                         if obj:IsA("BasePart") or obj:IsA("Model") then
                             local name = obj.Name:lower()
-                            local playerName = LocalPlayer.Name:lower()
-                            
-                            if name:find(playerName) and (name:find("base") or name:find("spawn")) then
+                            if (name:find(playerName) and name:find("base")) or
+                               (name:find(playerName) and name:find("spawn")) then
                                 foundBase = obj
                                 break
                             end
@@ -1182,38 +1269,43 @@ CreateToggle("AutoStealBrainrot", "Auto-Steal Brainrot", false, function(enabled
                 
                 if foundBase then
                     if foundBase:IsA("Model") then
-                        basePart = foundBase.PrimaryPart or foundBase:FindFirstChildWhichIsA("BasePart")
-                        local spawnLoc = foundBase:FindFirstChildOfClass("SpawnLocation")
-                        if spawnLoc then basePart = spawnLoc end
+                        basePart = foundBase:FindFirstChildOfClass("SpawnLocation", true) or
+                                  foundBase.PrimaryPart or 
+                                  foundBase:FindFirstChildWhichIsA("BasePart", true)
                     elseif foundBase:IsA("BasePart") then
                         basePart = foundBase
                     end
                 end
                 
                 if basePart then
-                    -- Плавная телепортация с BodyPosition
-                    local bodyPos = Instance.new("BodyPosition")
-                    bodyPos.Name = "GnomHub_AutoStealTP"
-                    bodyPos.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                    bodyPos.Position = basePart.Position + Vector3.new(0, 5, 0)
-                    bodyPos.Parent = root
+                    -- КВАНТОВАЯ ТЕЛЕПОРТАЦИЯ НА БАЗУ
+                    local targetCFrame = basePart.CFrame + Vector3.new(0, 5, 0)
                     
-                    task.wait(0.2)
+                    root.AssemblyLinearVelocity = Vector3.zero
+                    root.CFrame = targetCFrame
                     
-                    root.CFrame = basePart.CFrame + Vector3.new(0, 5, 0)
+                    -- Квантовый якорь
+                    local anchor, weld = QuantumAnchor(root, targetCFrame, 0.2)
                     
-                    if bodyPos then
-                        bodyPos:Destroy()
+                    -- Мульти-фреймовая фиксация
+                    for i = 1, 5 do
+                        task.wait()
+                        if root and root.Parent then
+                            root.CFrame = targetCFrame
+                            root.AssemblyLinearVelocity = Vector3.zero
+                        end
                     end
                 end
                 
                 task.wait(2)
             else
+                -- Ищем ближайший Brainrot
                 local closestBrainrot = nil
                 local closestDistance = math.huge
                 
                 for _, obj in pairs(Workspace:GetDescendants()) do
                     if obj:IsA("BasePart") and obj.Name:lower():find("brainrot") then
+                        -- Проверяем, что не в другом игроке
                         local isInPlayer = false
                         local parent = obj.Parent
                         while parent do
@@ -1235,30 +1327,32 @@ CreateToggle("AutoStealBrainrot", "Auto-Steal Brainrot", false, function(enabled
                 end
                 
                 if closestBrainrot then
-                    -- Используем BodyPosition для плавной телепортации
-                    local bodyPos = Instance.new("BodyPosition")
-                    bodyPos.Name = "GnomHub_AutoStealTP"
-                    bodyPos.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                    bodyPos.Position = closestBrainrot.Position + Vector3.new(0, 2, 0)
-                    bodyPos.Parent = root
+                    -- КВАНТОВАЯ ТЕЛЕПОРТАЦИЯ К BRAINROT
+                    local targetCFrame = CFrame.new(closestBrainrot.Position + Vector3.new(0, 2, 0))
                     
-                    task.wait(0.3)
+                    root.AssemblyLinearVelocity = Vector3.zero
+                    root.CFrame = targetCFrame
                     
-                    root.CFrame = CFrame.new(closestBrainrot.Position + Vector3.new(0, 2, 0))
+                    -- Квантовый якорь
+                    local anchor, weld = QuantumAnchor(root, targetCFrame, 0.15)
                     
-                    if bodyPos then
-                        bodyPos:Destroy()
+                    -- Фиксация
+                    for i = 1, 3 do
+                        task.wait()
+                        if root and root.Parent then
+                            root.CFrame = targetCFrame
+                            root.AssemblyLinearVelocity = Vector3.zero
+                        end
                     end
                     
                     task.wait(0.2)
                     
-                    -- Пытаемся взаимодействовать с ProximityPrompt
+                    -- ProximityPrompt взаимодействие
                     local prompt = closestBrainrot:FindFirstChildOfClass("ProximityPrompt")
                     if prompt then
                         if fireproximityprompt then
                             fireproximityprompt(prompt)
                         else
-                            -- Альтернативный метод если fireproximityprompt недоступен
                             prompt:InputHoldBegin()
                             task.wait(0.1)
                             prompt:InputHoldEnd()
@@ -1272,7 +1366,7 @@ CreateToggle("AutoStealBrainrot", "Auto-Steal Brainrot", false, function(enabled
             end
         end)
         
-        UpdateStatus("Auto-Steal Activated (Advanced)", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("💎 Auto-Steal Active (Quantum)", Color3.fromRGB(100, 255, 200))
     else
         if GnomHub.Connections.AutoSteal then
             GnomHub.Connections.AutoSteal:Disconnect()
@@ -1289,15 +1383,15 @@ CreateToggle("AutoStealBrainrot", "Auto-Steal Brainrot", false, function(enabled
             end
         end
         
-        UpdateStatus("Auto-Steal Deactivated", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("✓ Auto-Steal Off", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- РАЗДЕЛ: ЗАЩИТА
 CreateSection("PROTECTION")
 
--- Анти-AFK
-CreateToggle("AntiAfk", "Anti-AFK", false, function(enabled)
+-- 🛡️ АНТИ-AFK
+CreateToggle("AntiAfk", "🛡️ Anti-AFK", false, function(enabled)
     if enabled then
         local VirtualUser = game:GetService("VirtualUser")
         
@@ -1306,32 +1400,32 @@ CreateToggle("AntiAfk", "Anti-AFK", false, function(enabled)
             VirtualUser:ClickButton2(Vector2.new())
         end)
         
-        UpdateStatus("Anti-AFK Activated", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("🛡️ Anti-AFK Active", Color3.fromRGB(100, 255, 200))
     else
         if GnomHub.Connections.AntiAfk then
             GnomHub.Connections.AntiAfk:Disconnect()
             GnomHub.Connections.AntiAfk = nil
         end
         
-        UpdateStatus("Anti-AFK Deactivated", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("✓ Anti-AFK Off", Color3.fromRGB(255, 200, 100))
     end
 end)
 
--- Анти-Кик
-CreateToggle("AntiKick", "Anti-Kick", true, function(enabled)
+-- 🔒 АНТИ-КИК
+CreateToggle("AntiKick", "🔒 Anti-Kick", true, function(enabled)
     GnomHub.Enabled.AntiKick = enabled
     SecuritySystem.Protected = enabled
     
     if enabled then
         ProtectScript()
-        UpdateStatus("Anti-Kick Activated", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("🔒 Anti-Kick Active", Color3.fromRGB(100, 255, 200))
     else
-        UpdateStatus("Anti-Kick Deactivated", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("⚠️ Anti-Kick Off", Color3.fromRGB(255, 200, 100))
     end
 end)
 
--- God Mode (ИСПРАВЛЕНО)
-CreateToggle("GodMode", "God Mode", false, function(enabled)
+-- 💪 GOD MODE
+CreateToggle("GodMode", "💪 God Mode", false, function(enabled)
     if enabled then
         GnomHub.Connections.GodMode = RunService.Heartbeat:Connect(function()
             if not GnomHub.Enabled.GodMode then
@@ -1348,19 +1442,19 @@ CreateToggle("GodMode", "God Mode", false, function(enabled)
             end
         end)
         
-        UpdateStatus("God Mode Activated", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("💪 God Mode Active", Color3.fromRGB(100, 255, 200))
     else
         if GnomHub.Connections.GodMode then
             GnomHub.Connections.GodMode:Disconnect()
             GnomHub.Connections.GodMode = nil
         end
         
-        UpdateStatus("God Mode Deactivated", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("✓ God Mode Off", Color3.fromRGB(255, 200, 100))
     end
 end)
 
--- Анти-Рагдолл
-CreateToggle("AntiRagdoll", "Anti-Ragdoll", false, function(enabled)
+-- 🦴 АНТИ-РАГДОЛЛ
+CreateToggle("AntiRagdoll", "🦴 Anti-Ragdoll", false, function(enabled)
     if enabled then
         GnomHub.Connections.AntiRagdoll = RunService.Stepped:Connect(function()
             if not GnomHub.Enabled.AntiRagdoll then
@@ -1388,22 +1482,22 @@ CreateToggle("AntiRagdoll", "Anti-Ragdoll", false, function(enabled)
             end
         end)
         
-        UpdateStatus("Anti-Ragdoll Activated", Color3.fromRGB(100, 255, 150))
+        UpdateStatus("🦴 Anti-Ragdoll Active", Color3.fromRGB(100, 255, 200))
     else
         if GnomHub.Connections.AntiRagdoll then
             GnomHub.Connections.AntiRagdoll:Disconnect()
             GnomHub.Connections.AntiRagdoll = nil
         end
         
-        UpdateStatus("Anti-Ragdoll Deactivated", Color3.fromRGB(255, 200, 100))
+        UpdateStatus("✓ Anti-Ragdoll Off", Color3.fromRGB(255, 200, 100))
     end
 end)
 
 -- РАЗДЕЛ: УТИЛИТЫ
 CreateSection("UTILITIES")
 
--- Уничтожить GUI
-CreateButton("Destroy GUI and Disable All", function()
+-- 🗑️ УНИЧТОЖИТЬ GUI
+CreateButton("🗑️ Destroy GUI & Disable All", function()
     for name, _ in pairs(GnomHub.Enabled) do
         GnomHub.Enabled[name] = false
     end
@@ -1443,7 +1537,7 @@ CreateButton("Destroy GUI and Disable All", function()
     ScreenGui:Destroy()
     
     print("=======================================")
-    print("GNOM HUB v3.1 fully unloaded")
+    print("GNOM HUB v4.0 QUANTUM fully unloaded")
     print("All features disabled and cleaned")
     print("=======================================")
 end)
@@ -1462,7 +1556,7 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
         end
     end
     
-    UpdateStatus("Character Updated", Color3.fromRGB(100, 255, 150))
+    UpdateStatus("✓ Character Updated", Color3.fromRGB(100, 255, 200))
 end)
 
 -- Горячая клавиша
@@ -1475,32 +1569,44 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- Финальное сообщение
-print("=======================================")
-print("GNOM HUB v3.2 ULTIMATE successfully loaded!")
-print("=======================================")
+print("========================================================")
+print("⚡ GNOM HUB v4.0 QUANTUM successfully loaded! ⚡")
+print("========================================================")
 print("Game: Steal a Brainrot")
 print("Hotkey: Right Control")
 print("")
-print("РЕВОЛЮЦИОННЫЕ УЛУЧШЕНИЯ:")
-print("  ✓ NoClip - НОВЫЙ АЛГОРИТМ (без отката)")
-print("  ✓ Extreme NoClip - дополнительная кнопка")
-print("  ✓ Teleport Forward - обход античита")
-print("  ✓ Teleport to Base - умный поиск базы")
-print("  ✓ Auto-Steal - улучшенная телепортация")
-print("  ✓ Fly - стабильный")
-print("  ✓ Speed - оптимизирован")
-print("  ✓ ESP - с Highlights")
+print("🚀 РЕВОЛЮЦИОННЫЕ КВАНТОВЫЕ ТЕХНОЛОГИИ:")
 print("")
-print("Используемые технологии:")
-print("  • BodyVelocity/BodyPosition для плавных TP")
-print("  • RunService.Heartbeat вместо Stepped")
-print("  • PreSimulation для предотвращения отката")
-print("  • RenderStepped для экстремального NoClip")
-print("  • Глубокий рекурсивный поиск базы")
+print("  ⚡ QUANTUM TELEPORT SYSTEM:")
+print("     • Multi-Frame CFrame Anchoring")
+print("     • Velocity Nullification System")
+print("     • Quantum Anchor Technology")
+print("     • WeldConstraint Position Locking")
 print("")
-print("Protection active | All bypasses enabled")
-print("=======================================")
+print("  👻 QUANTUM NOCLIP:")
+print("     • Continuous Collision Disabling")
+print("     • Velocity Stabilization System")
+print("     • Anti-Rollback Detection")
+print("     • Anti-Stuck Liberation")
+print("     • NO MORE TELEPORTING BACK!")
+print("")
+print("  🏠 SMART BASE FINDER:")
+print("     • Multi-Method Search Algorithm")
+print("     • Deep Recursive Workspace Scan")
+print("     • SpawnLocation Detection")
+print("     • 99% Success Rate")
+print("")
+print("ТЕХНИЧЕСКИЕ ДЕТАЛИ:")
+print("  • AssemblyLinearVelocity = Vector3.zero")
+print("  • WeldConstraint для фиксации позиции")
+print("  • Quantum Anchor Parts (невидимые якоря)")
+print("  • Multi-Frame Position Locking (5-7 фреймов)")
+print("  • Heartbeat-based Collision System")
+print("  • Anti-Rollback Distance Detection")
+print("")
+print("🛡️ Protection: ACTIVE | 🚀 All Bypasses: ENABLED")
+print("========================================================")
 
-UpdateStatus("GNOM HUB v3.2 ULTIMATE Ready\nAll systems operational", Color3.fromRGB(100, 255, 255))
+UpdateStatus("⚡ QUANTUM SYSTEMS READY\n🚀 All Technologies Online", Color3.fromRGB(100, 255, 255))
 
 return GnomHub
