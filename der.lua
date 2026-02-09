@@ -763,7 +763,7 @@ CreateButton("🏠 Smart TP to Base", function()
     end
 end)
 
--- 👻 РЕВОЛЮЦИОННЫЙ НОКЛИП (БЕЗ ОТКАТА!)
+-- 👻 ИДЕАЛЬНЫЙ НОКЛИП (БЕЗ ТЕЛЕПОРТАЦИИ НАЗАД!)
 CreateToggle("NoClip", "👻 Quantum NoClip", false, function(enabled)
     if enabled then
         local char, hum, root = getChar()
@@ -773,13 +773,14 @@ CreateToggle("NoClip", "👻 Quantum NoClip", false, function(enabled)
             return
         end
         
-        -- МЕТОД 1: Continuous Collision Disabling (каждый фрейм)
-        GnomHub.Connections.NoClip = RunService.Heartbeat:Connect(function()
+        -- НОВЫЙ ПОДХОД: Только отключение коллизий, НЕ трогаем физику!
+        GnomHub.Connections.NoClip = RunService.Stepped:Connect(function()
             if not GnomHub.Enabled.NoClip then return end
             
-            local currentChar = getChar()
-            if not currentChar then return end
+            local currentChar, currentHum, currentRoot = getChar()
+            if not currentChar or not currentRoot then return end
             
+            -- Просто отключаем коллизии каждый фрейм
             for _, part in pairs(currentChar:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = false
@@ -787,90 +788,18 @@ CreateToggle("NoClip", "👻 Quantum NoClip", false, function(enabled)
             end
         end)
         
-        -- МЕТОД 2: Velocity Stabilization System
-        GnomHub.Connections.NoClipStabilizer = RunService.Heartbeat:Connect(function()
-            if not GnomHub.Enabled.NoClip then return end
-            
-            local currentChar, currentHum, currentRoot = getChar()
-            if not currentRoot then return end
-            
-            -- Сохраняем текущую позицию
-            if not GnomHub.NoClipData then
-                GnomHub.NoClipData = {
-                    LastPosition = currentRoot.Position,
-                    LastCFrame = currentRoot.CFrame,
-                    FrameCount = 0
-                }
-            end
-            
-            local data = GnomHub.NoClipData
-            data.FrameCount = data.FrameCount + 1
-            
-            -- Каждые 2 фрейма проверяем на телепортацию назад
-            if data.FrameCount % 2 == 0 then
-                local currentPos = currentRoot.Position
-                local distance = (currentPos - data.LastPosition).Magnitude
-                local moveDirection = currentHum.MoveDirection.Magnitude
-                
-                -- Если игра пытается откатить нас назад (детект по резкому изменению позиции)
-                if distance > 8 and moveDirection > 0 then
-                    -- Возвращаем на последнюю валидную позицию
-                    currentRoot.CFrame = data.LastCFrame
-                    currentRoot.AssemblyLinearVelocity = Vector3.zero
-                    currentRoot.AssemblyAngularVelocity = Vector3.zero
-                elseif distance < 8 then
-                    -- Обновляем последнюю валидную позицию
-                    data.LastPosition = currentPos
-                    data.LastCFrame = currentRoot.CFrame
-                end
-            end
-        end)
-        
-        -- МЕТОД 3: Anti-Stuck System (освобождение из застревания)
-        GnomHub.Connections.NoClipAntiStuck = RunService.Heartbeat:Connect(function()
-            if not GnomHub.Enabled.NoClip then return end
-            
-            local currentChar, currentHum, currentRoot = getChar()
-            if not currentRoot then return end
-            
-            -- Если застряли (не двигаемся при нажатой клавише)
-            if currentHum.MoveDirection.Magnitude > 0 then
-                local velocity = currentRoot.AssemblyLinearVelocity.Magnitude
-                
-                if velocity < 1 then
-                    -- Принудительно двигаем в направлении взгляда
-                    local cam = Workspace.CurrentCamera
-                    if cam then
-                        local pushDirection = currentHum.MoveDirection
-                        currentRoot.AssemblyLinearVelocity = pushDirection * 5
-                    end
-                end
-            end
-        end)
-        
-        -- МЕТОД 4: Disable Humanoid States
+        -- Отключаем проблемные состояния гуманоида
         if hum then
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-            hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, false)
         end
         
-        UpdateStatus("👻 Quantum NoClip Active", Color3.fromRGB(100, 255, 200))
+        UpdateStatus("👻 NoClip Active - Walk Through Walls!", Color3.fromRGB(100, 255, 200))
     else
-        -- Отключаем все системы
+        -- Отключаем системы
         if GnomHub.Connections.NoClip then
             GnomHub.Connections.NoClip:Disconnect()
             GnomHub.Connections.NoClip = nil
-        end
-        
-        if GnomHub.Connections.NoClipStabilizer then
-            GnomHub.Connections.NoClipStabilizer:Disconnect()
-            GnomHub.Connections.NoClipStabilizer = nil
-        end
-        
-        if GnomHub.Connections.NoClipAntiStuck then
-            GnomHub.Connections.NoClipAntiStuck:Disconnect()
-            GnomHub.Connections.NoClipAntiStuck = nil
         end
         
         GnomHub.NoClipData = nil
@@ -893,7 +822,6 @@ CreateToggle("NoClip", "👻 Quantum NoClip", false, function(enabled)
         if hum then
             hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
             hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
-            hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, true)
         end
         
         UpdateStatus("✓ NoClip Deactivated", Color3.fromRGB(255, 200, 100))
@@ -1583,12 +1511,12 @@ print("     • Velocity Nullification System")
 print("     • Quantum Anchor Technology")
 print("     • WeldConstraint Position Locking")
 print("")
-print("  👻 QUANTUM NOCLIP:")
-print("     • Continuous Collision Disabling")
-print("     • Velocity Stabilization System")
-print("     • Anti-Rollback Detection")
-print("     • Anti-Stuck Liberation")
-print("     • NO MORE TELEPORTING BACK!")
+print("  👻 PERFECT NOCLIP:")
+print("     • Simple & Stable Collision Disabling")
+print("     • No Velocity Interference")
+print("     • Smooth Walking Through Walls")
+print("     • ZERO Teleporting Back!")
+print("     • Works While Moving AND Standing!")
 print("")
 print("  🏠 SMART BASE FINDER:")
 print("     • Multi-Method Search Algorithm")
